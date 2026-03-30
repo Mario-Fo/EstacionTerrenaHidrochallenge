@@ -48,7 +48,7 @@
         Integrantes del Proyecto
       </h4>
 
-      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6 text-sm">
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-7 gap-6 text-sm">
         <!-- <div></div> -->
         <div class="rounded-xl border border-slate-800 bg-slate-900/40 p-4">
           <p class="font-semibold text-white">Ana Laura Vasquez Solis</p>
@@ -62,43 +62,28 @@
         </div>
 
         <div class="rounded-xl border border-slate-800 bg-slate-900/40 p-4">
-          <p class="font-semibold text-white">Paricipante 3</p>
+          <p class="font-semibold text-white">Jose Carlos de la Garza Paz</p>
           <p class="text-slate-400 mt-1">Equipo de lanzamiento</p>
         </div>
 
         <div class="rounded-xl border border-slate-800 bg-slate-900/40 p-4">
-          <p class="font-semibold text-white">Participante 4</p>
+          <p class="font-semibold text-white">Jose Noel Cruz Castillo</p>
           <p class="text-slate-400 mt-1">Equipo de lanzamiento</p>
         </div>
 
         <div class="rounded-xl border border-slate-800 bg-slate-900/40 p-4">
-          <p class="font-semibold text-white">Participante 5</p>
+          <p class="font-semibold text-white">Cintia Guadalupe Iyescas Hernandez</p>
           <p class="text-slate-400 mt-1">Equipo de recuperacion</p>
         </div>
 
         <div class="rounded-xl border border-slate-800 bg-slate-900/40 p-4">
-          <p class="font-semibold text-white">Participante 6</p>
+          <p class="font-semibold text-white">Cristian Marcelino Alfaro Alvarado</p>
           <p class="text-slate-400 mt-1">Estacion Terrena</p>
         </div>
 
         <div class="rounded-xl border border-slate-800 bg-slate-900/40 p-4">
-          <p class="font-semibold text-white">Participante 7</p>
+          <p class="font-semibold text-white">Jorge Luis Cavazos Cisneros</p>
           <p class="text-slate-400 mt-1">Estacion de lanzamiento</p>
-        </div>
-
-        <div class="rounded-xl border border-slate-800 bg-slate-900/40 p-4">
-          <p class="font-semibold text-white">Participante 8</p>
-          <p class="text-slate-400 mt-1">Equipo de recuperacion</p>
-        </div>
-
-        <div class="rounded-xl border border-slate-800 bg-slate-900/40 p-4">
-          <p class="font-semibold text-white">Participante 9</p>
-          <p class="text-slate-400 mt-1">Equipo de recuperacion</p>
-        </div>
-
-        <div class="rounded-xl border border-slate-800 bg-slate-900/40 p-4">
-          <p class="font-semibold text-white">Participante 10</p>
-          <p class="text-slate-400 mt-1">Equipo de recuperacion</p>
         </div>
       </div>
     </div>
