@@ -1,13 +1,13 @@
-﻿#include <WiFi.h>
+#include <WiFi.h>
 #include <HTTPClient.h>
 
-const char* ssid = "WIFI";
-const char* password = "PASSWORD_WIFI";
-const char* serverUrl = "http://IP_DE_TU_LAP:3000/api/lecturas-multi";
+const char* ssid = "IZZI-49DC";
+const char* password = "F82DC03649DC";
+const char* serverUrl = "http://192.168.0.29:8000/api/lecturas-multi";
 
 unsigned long ultimoIntentoWiFi = 0;
 unsigned long ultimoEnvio = 0;
-const unsigned long intervaloEnvioMs = 5000;
+const unsigned long intervaloEnvioMs = 300;
 
 float randomFloat(float minValue, float maxValue) {
   long r = random(0, 1000000);
@@ -27,31 +27,54 @@ void asegurarWiFi() {
 }
 
 void enviarPOST(const String& jsonPayload) {
+  // Verificar conexión WiFi
   if (WiFi.status() != WL_CONNECTED) {
     Serial.println("No hay WiFi. No se envia POST.");
     return;
   }
 
   HTTPClient http;
+
+  // Iniciar conexión
   http.begin(serverUrl);
   http.addHeader("Content-Type", "application/json");
 
-  Serial.println("===== JSON ENVIADO =====");
+  Serial.println("\n===== JSON ENVIADO =====");
   Serial.println(jsonPayload);
 
+  // Enviar POST
   int code = http.POST(jsonPayload);
 
-  Serial.print("POST -> ");
+  // Mostrar código HTTP
+  Serial.print("Código HTTP: ");
   Serial.println(code);
 
+  // Interpretar código HTTP
   if (code > 0) {
+
+    if (code >= 200 && code < 300) {
+      Serial.println("EXITO (2xx)");
+    } 
+    else if (code >= 300 && code < 400) {
+      Serial.println("REDIRECCION (3xx)");
+    } 
+    else if (code >= 400 && code < 500) {
+      Serial.println("ERROR DEL CLIENTE (4xx)");
+    } 
+    else if (code >= 500) {
+      Serial.println("ERROR DEL SERVIDOR (5xx)");
+    }
+
+    // Mostrar respuesta del servidor
     String respuesta = http.getString();
-    Serial.println("Respuesta servidor:");
+    Serial.println("📥 Respuesta servidor:");
     Serial.println(respuesta);
+
   } else {
-    Serial.println("Error al enviar POST.");
+    Serial.println("Error en la solicitud HTTP");
   }
 
+  // Cerrar conexión
   http.end();
 }
 
