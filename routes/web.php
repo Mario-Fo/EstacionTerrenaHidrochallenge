@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\ConfigController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\SimulacionController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', [DashboardController::class, 'index']);
@@ -23,3 +24,4 @@ Route::get('/simulacion', function () {
     return view('Simulacion.sim');
 })->name('simulacion');
 
+Route::post('/simulacion/run', [SimulacionController::class, 'run'])->name('simulacion.run');

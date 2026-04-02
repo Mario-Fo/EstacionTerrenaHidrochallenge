@@ -35,4 +35,12 @@ return [
         ],
     ],
 
+    'python_sim' => [
+        'url' => env('PY_SIM_API_URL', 'http://127.0.0.1:8002/simular'),
+    ],
+
+    'telemetry' => [
+        'upstream_latest_url' => env('TELEMETRY_UPSTREAM_LATEST_URL', 'http://127.0.0.1:8000/api/lecturas/ultima'),
+    ],
+
 ];

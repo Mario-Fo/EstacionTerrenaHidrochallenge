@@ -1,5 +1,5 @@
 @extends ('layouts.app')
-
+@section('title', 'Comparación de Misiones')
 @section('content')
 
     <!-- MAIN -->

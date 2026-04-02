@@ -1,5 +1,5 @@
 ﻿@extends ('layouts.app')
-
+@section('title', 'Dashboard')
 @section('content')
   @php
     $altitudeThreshold = (float) ($requirements['altitude_threshold'] ?? 100);
@@ -257,12 +257,10 @@
   <!-- Vanilla JS -->
   <script>
     (function () {
-      // Sidebar open/close
       const sidebar = document.getElementById("sidebar");
       const overlay = document.getElementById("overlay");
       const btnSidebar = document.getElementById("btnSidebar");
       const btnCloseSidebar = document.getElementById("btnCloseSidebar");
-
       function openSidebar() {
         sidebar.classList.remove("-translate-x-full");
         overlay.classList.remove("hidden");
@@ -278,11 +276,9 @@
       btnCloseSidebar?.addEventListener("click", closeSidebar);
       overlay?.addEventListener("click", closeSidebar);
 
-      // Folder toggle
       const btnFolder = document.getElementById("btnFolder");
       const folderContent = document.getElementById("folderContent");
       const chev = document.getElementById("chev");
-
       btnFolder?.addEventListener("click", () => {
         const expanded = btnFolder.getAttribute("aria-expanded") === "true";
         btnFolder.setAttribute("aria-expanded", String(!expanded));
@@ -291,7 +287,10 @@
         chev.style.transition = "transform 150ms ease";
       });
 
-      // Formatting helpers
+      const APOGEE_MIN = Number(@json($altitudeThreshold));
+      const FALL_MAX = Number(@json($fallSpeedThreshold));
+      const AIRE_TIME_MIN = Number(@json($airTimeThreshold));
+
       function fmt2(n) { return Number(n).toFixed(2); }
       function fmt6(n) { return Number(n).toFixed(6); }
       function formatMissionTime(seconds) {
@@ -300,75 +299,50 @@
         const secs = String(total % 60).padStart(2, "0");
         return `T+${minutes}:${secs}`;
       }
-      function randBetween(min, max) {
-        return Math.random() * (max - min) + min;
+
+      function setText(id, value) {
+        const el = document.getElementById(id);
+        if (el) el.textContent = value;
       }
 
-      // === STATIC telemetry (replace later) ===
       const telemetry = {
-        pressure_pa: 101325,
-        temperature_c: 28.5,
-        humidity_rh: 55.2,
-        lat_deg: 25.839818,
-        lon_deg: -97.454501,
-        alt_m: 12.345436,
-        accel_ms2: 0.98,
-        accel_x_g: 0.98,
-        accel_y_g: 0.98,
-        accel_z_g: 0.98,
-        rpm: 54,
-
-        // requisitos (ejemplo)
-        apogee_m: 12.345436,
-        fall_ms: 8.00,    // prueba con 7, 8, 9, 12
-        air_time_s: 45   // prueba con 15, 16, 17
+        pressure_pa: null,
+        temperature_c: null,
+        humidity_rh: null,
+        lat_deg: null,
+        lon_deg: null,
+        alt_m: null,
+        accel_ms2: null,
+        accel_x_g: null,
+        accel_y_g: null,
+        accel_z_g: null,
+        rpm: null,
+        apogee_m: 0,
+        fall_ms: 0,
+        air_time_s: 0
       };
 
-      function syncRequirementAltitudeWithTelemetry() {
-        telemetry.apogee_m = telemetry.alt_m;
-      }
+      let maxApogeeSeen = 0;
+      let missionStartAt = null;
+      let lastSampleAt = null;
+      let lastAltitude = null;
+      let lastTelemetryRowId = null;
 
       function paintTelemetryAside() {
-        document.getElementById("pVal").textContent = fmt2(telemetry.pressure_pa);
-        document.getElementById("tVal").textContent = fmt2(telemetry.temperature_c);
-        document.getElementById("hVal").textContent = fmt2(telemetry.humidity_rh);
-        document.getElementById("latVal").textContent = fmt6(telemetry.lat_deg);
-        document.getElementById("lonVal").textContent = fmt6(telemetry.lon_deg);
-        document.getElementById("altVal").textContent = fmt6(telemetry.alt_m);
-        document.getElementById("aVal").textContent = fmt2(telemetry.accel_ms2);
-        document.getElementById("axVal").textContent = fmt2(telemetry.accel_x_g);
-        document.getElementById("ayVal").textContent = fmt2(telemetry.accel_y_g);
-        document.getElementById("azVal").textContent = fmt2(telemetry.accel_z_g);
-        document.getElementById("rpmVal").textContent = Math.round(telemetry.rpm);
+        setText("pVal", telemetry.pressure_pa === null ? "--" : fmt2(telemetry.pressure_pa));
+        setText("tVal", telemetry.temperature_c === null ? "--" : fmt2(telemetry.temperature_c));
+        setText("hVal", telemetry.humidity_rh === null ? "--" : fmt2(telemetry.humidity_rh));
+        setText("latVal", telemetry.lat_deg === null ? "--" : fmt6(telemetry.lat_deg));
+        setText("lonVal", telemetry.lon_deg === null ? "--" : fmt6(telemetry.lon_deg));
+        setText("altVal", telemetry.alt_m === null ? "--" : fmt2(telemetry.alt_m));
+        setText("aVal", telemetry.accel_ms2 === null ? "--" : fmt2(telemetry.accel_ms2));
+        setText("axVal", telemetry.accel_x_g === null ? "--" : fmt2(telemetry.accel_x_g));
+        setText("ayVal", telemetry.accel_y_g === null ? "--" : fmt2(telemetry.accel_y_g));
+        setText("azVal", telemetry.accel_z_g === null ? "--" : fmt2(telemetry.accel_z_g));
+        setText("rpmVal", telemetry.rpm === null ? "--" : String(Math.round(telemetry.rpm)));
       }
 
-      function randomizeTelemetryAside() {
-        telemetry.pressure_pa = randBetween(100800, 102200);
-        telemetry.temperature_c = randBetween(20, 38);
-        telemetry.humidity_rh = randBetween(25, 85);
-        telemetry.lat_deg = randBetween(25.839100, 25.840400);
-        telemetry.lon_deg = randBetween(-97.455200, -97.453900);
-        telemetry.alt_m = randBetween(8, 140);
-        telemetry.accel_ms2 = randBetween(-3, 16);
-        telemetry.accel_x_g = randBetween(-2, 2);
-        telemetry.accel_y_g = randBetween(-2, 2);
-        telemetry.accel_z_g = randBetween(-2, 2);
-        telemetry.rpm = randBetween(0, 4500);
-        syncRequirementAltitudeWithTelemetry();
-        paintTelemetryAside();
-      }
-
-      // Demo en tiempo real (solo datos del aside de telemetria)
-      paintTelemetryAside();
-      setInterval(randomizeTelemetryAside, 1000);
-
-      // === Graficas en tiempo real ===
       const chartTimeline = ["5", "10", "15", "20", "25", "30"];
-      function readMetric(id, fallbackValue) {
-        const raw = (document.getElementById(id)?.textContent || "").trim();
-        const parsed = Number.parseFloat(raw);
-        return Number.isFinite(parsed) ? parsed : Number(fallbackValue || 0);
-      }
       function createRealtimeChart(canvasId, label, color, initialValue) {
         if (typeof Chart === "undefined") return null;
         const canvas = document.getElementById(canvasId);
@@ -401,6 +375,7 @@
           }
         });
       }
+
       function pushChartValue(chart, value) {
         if (!chart) return;
         const points = chart.data.datasets[0].data;
@@ -409,18 +384,9 @@
         chart.update("none");
       }
 
-      const chartAlturaTiempo = createRealtimeChart("chartAlturaTiempo", "Altura (m)", "#34d399", telemetry.apogee_m);
-      const chartAceleracionTiempo = createRealtimeChart("chartAceleracionTiempo", "Aceleracion", "#f59e0b", telemetry.accel_ms2);
-      const chartVelocidadTiempo = createRealtimeChart("chartVelocidadTiempo", "Velocidad vertical (m/s)", "#38bdf8", telemetry.fall_ms);
-
-      function updateRealtimeCharts() {
-        pushChartValue(chartAlturaTiempo, readMetric("apogeeVal", telemetry.apogee_m));
-        pushChartValue(chartAceleracionTiempo, readMetric("aVal", telemetry.accel_ms2));
-        pushChartValue(chartVelocidadTiempo, readMetric("fallVal", telemetry.fall_ms));
-      }
-
-      updateRealtimeCharts();
-      setInterval(updateRealtimeCharts, 1100);
+      const chartAlturaTiempo = createRealtimeChart("chartAlturaTiempo", "Altura (m)", "#34d399", 0);
+      const chartAceleracionTiempo = createRealtimeChart("chartAceleracionTiempo", "Aceleracion", "#f59e0b", 0);
+      const chartVelocidadTiempo = createRealtimeChart("chartVelocidadTiempo", "Velocidad vertical (m/s)", "#38bdf8", 0);
 
       const missionTimeEl = document.getElementById("missionTime");
       const missionStageEl = document.getElementById("missionStage");
@@ -450,7 +416,7 @@
         const stageIndex = Math.max(0, stages.indexOf(currentStage));
         const missionProgress = Math.round((stageIndex / (stages.length - 1)) * 100);
 
-        if (missionTimeEl) missionTimeEl.textContent = `${fmt2(seconds)} s`;
+        if (missionTimeEl) missionTimeEl.textContent = formatMissionTime(seconds);
         if (missionStageEl) missionStageEl.textContent = stageLabels[currentStage];
         if (missionProgressLabel) missionProgressLabel.textContent = `${missionProgress}%`;
         if (missionProgressBar) missionProgressBar.style.width = `${missionProgress}%`;
@@ -469,98 +435,48 @@
         });
       }
 
-// ====== MAPA (Leaflet + OpenStreetMap) ======
-let map, marker, tileLayer;
-let lastLat = null, lastLon = null;
+      let map = null;
+      let marker = null;
+      let lastLat = null;
+      let lastLon = null;
 
-function initLeafletMap(lat, lon) {
-  // Mapa (ligero)
-  map = L.map("map", {
-    zoomControl: true,
-    attributionControl: true
-  }).setView([lat, lon], 16);
+      function updateCoordsLabel(lat, lon) {
+        setText("coordsLabel", `${lat.toFixed(6)}, ${lon.toFixed(6)}`);
+      }
 
-  // Tiles OSM (por defecto, suficiente y simple)
-  tileLayer = L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-    maxZoom: 19,
-    updateWhenIdle: true,      // reduce trabajo
-    keepBuffer: 1,             // menos tiles en memoria
-    crossOrigin: true
-  }).addTo(map);
+      function initLeafletMap(lat, lon) {
+        if (typeof L === "undefined" || map) return;
+        map = L.map("map", { zoomControl: true, attributionControl: true }).setView([lat, lon], 16);
+        L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+          maxZoom: 19,
+          updateWhenIdle: true,
+          keepBuffer: 1,
+          crossOrigin: true
+        }).addTo(map);
+        marker = L.marker([lat, lon]).addTo(map);
+        lastLat = lat;
+        lastLon = lon;
+        updateCoordsLabel(lat, lon);
+      }
 
-  // Marcador
-  marker = L.marker([lat, lon]).addTo(map);
-
-  updateCoordsLabel(lat, lon);
-  lastLat = lat;
-  lastLon = lon;
-}
-
-function updateCoordsLabel(lat, lon) {
-  const el = document.getElementById("coordsLabel");
-  if (el) el.textContent = `${lat.toFixed(6)}, ${lon.toFixed(6)}`;
-}
-
-function updateLeafletMarker(lat, lon) {
-  if (!map || !marker) return;
-
-  // Evita updates si no cambiÃ³ de verdad (reduce red y renders)
-  if (lastLat === lat && lastLon === lon) return;
-
-  marker.setLatLng([lat, lon]);
-
-  // Para minimizar movimiento/carga: solo recentrar si el marcador se sale del viewport
-  const bounds = map.getBounds();
-  if (!bounds.contains([lat, lon])) {
-    map.setView([lat, lon], map.getZoom(), { animate: false });
-  }
-
-  updateCoordsLabel(lat, lon);
-  lastLat = lat;
-  lastLon = lon;
-}
-
-// Lee lat/lon desde tu UI (latVal, lonVal) y actualiza
-function readLatLonFromDOM() {
-  const lat = parseFloat(document.getElementById("latVal")?.textContent || "0");
-  const lon = parseFloat(document.getElementById("lonVal")?.textContent || "0");
-  return { lat, lon };
-}
-
-// Inicializa cuando el DOM estÃ© listo
-document.addEventListener("DOMContentLoaded", () => {
-  const { lat, lon } = readLatLonFromDOM();
-  initLeafletMap(lat, lon);
-
-  // Observa cambios en latVal/lonVal (si los actualizas por telemetrÃ­a)
-  const latEl = document.getElementById("latVal");
-  const lonEl = document.getElementById("lonVal");
-
-  const observer = new MutationObserver(() => {
-    const { lat, lon } = readLatLonFromDOM();
-    updateLeafletMarker(lat, lon);
-  });
-
-  if (latEl) observer.observe(latEl, { childList: true, characterData: true, subtree: true });
-  if (lonEl) observer.observe(lonEl, { childList: true, characterData: true, subtree: true });
-});
-      // === Reglas de requisitos ===
-      // Altitud y tiempo:
-      //   OK: valor >= umbral
-      // Velocidad de caida:
-      //   OK: valor <= umbral
-      const APOGEE_MIN = Number(@json($altitudeThreshold));
-      const FALL_MAX = Number(@json($fallSpeedThreshold));
-      const AIRE_TIME_MIN = Number(@json($airTimeThreshold));
+      function updateLeafletMarker(lat, lon) {
+        if (!map || !marker) return;
+        if (lastLat === lat && lastLon === lon) return;
+        marker.setLatLng([lat, lon]);
+        if (!map.getBounds().contains([lat, lon])) {
+          map.setView([lat, lon], map.getZoom(), { animate: false });
+        }
+        lastLat = lat;
+        lastLon = lon;
+        updateCoordsLabel(lat, lon);
+      }
 
       function applyStatus(cardEl, badgeEl, status, label) {
-        // Reset card
         cardEl.classList.remove(
           "border-emerald-500/60", "bg-emerald-500/10",
           "border-amber-500/60", "bg-amber-500/10",
           "border-rose-500/60", "bg-rose-500/10"
         );
-        // Reset badge
         badgeEl.classList.remove(
           "border-emerald-500/50", "bg-emerald-500/10", "text-emerald-200",
           "border-amber-500/50", "bg-amber-500/10", "text-amber-200",
@@ -593,7 +509,6 @@ document.addEventListener("DOMContentLoaded", () => {
         return "bad";
       }
 
-      // Apply requirements colors
       const apogeeCard = document.getElementById("cardApogee");
       const apogeeBadge = document.getElementById("apogeeBadge");
       const apogeeMaxEl = document.getElementById("apogeeMaxVal");
@@ -601,16 +516,12 @@ document.addEventListener("DOMContentLoaded", () => {
       const fallBadge = document.getElementById("fallBadge");
       const aireTimeCard = document.getElementById("cardAireTime");
       const aireTimeBadge = document.getElementById("aireTimeBadge");
-      syncRequirementAltitudeWithTelemetry();
-      let maxApogeeSeen = Number(telemetry.apogee_m) || 0;
-      if (apogeeMaxEl) apogeeMaxEl.textContent = fmt2(maxApogeeSeen);
 
       function paintRequirements() {
-        syncRequirementAltitudeWithTelemetry();
         const currentAltitude = Number(telemetry.alt_m) || 0;
-        document.getElementById("apogeeVal").textContent = fmt2(currentAltitude);
-        document.getElementById("fallVal").textContent = fmt2(telemetry.fall_ms);
-        document.getElementById("aireTimeVal").textContent = fmt2(telemetry.air_time_s);
+        setText("apogeeVal", fmt2(currentAltitude));
+        setText("fallVal", fmt2(telemetry.fall_ms));
+        setText("aireTimeVal", fmt2(telemetry.air_time_s));
         if (currentAltitude > maxApogeeSeen) {
           maxApogeeSeen = currentAltitude;
           if (apogeeMaxEl) apogeeMaxEl.textContent = fmt2(maxApogeeSeen);
@@ -641,17 +552,80 @@ document.addEventListener("DOMContentLoaded", () => {
         );
       }
 
-      function randomizeRequirements() {
-        telemetry.fall_ms = randBetween(5, 12);
-        telemetry.air_time_s = randBetween(2, 56);
+      function applyTelemetryFromApi(sample) {
+        const rowId = Number(sample?.id_db);
+        if (Number.isFinite(rowId)) {
+          if (lastTelemetryRowId === rowId) return;
+          lastTelemetryRowId = rowId;
+        }
+
+        const now = Date.now();
+
+        telemetry.pressure_pa = Number(sample.pres);
+        telemetry.temperature_c = Number(sample.temp);
+        telemetry.humidity_rh = Number(sample.hum);
+        telemetry.lat_deg = Number(sample.lat);
+        telemetry.lon_deg = Number(sample.long);
+        telemetry.alt_m = Number(sample.alt);
+        telemetry.accel_x_g = Number(sample.accX);
+        telemetry.accel_y_g = Number(sample.accY);
+        telemetry.accel_z_g = Number(sample.accZ);
+        telemetry.rpm = Number(sample.RPM);
+
+        telemetry.accel_ms2 = Math.sqrt(
+          Math.pow(telemetry.accel_x_g, 2) +
+          Math.pow(telemetry.accel_y_g, 2) +
+          Math.pow(telemetry.accel_z_g, 2)
+        );
+
+        if (lastSampleAt !== null && lastAltitude !== null) {
+          const dt = (now - lastSampleAt) / 1000;
+          if (dt > 0.05) {
+            const vz = (telemetry.alt_m - lastAltitude) / dt;
+            telemetry.fall_ms = Math.max(0, -vz);
+          }
+        }
+
+        if (missionStartAt === null) missionStartAt = now;
+        telemetry.air_time_s = (now - missionStartAt) / 1000;
+        telemetry.apogee_m = telemetry.alt_m;
+
+        lastSampleAt = now;
+        lastAltitude = telemetry.alt_m;
+
+        paintTelemetryAside();
         paintRequirements();
+        pushChartValue(chartAlturaTiempo, telemetry.alt_m);
+        pushChartValue(chartAceleracionTiempo, telemetry.accel_ms2);
+        pushChartValue(chartVelocidadTiempo, telemetry.fall_ms);
+
+        if (Number.isFinite(telemetry.lat_deg) && Number.isFinite(telemetry.lon_deg)) {
+          if (!map) initLeafletMap(telemetry.lat_deg, telemetry.lon_deg);
+          updateLeafletMarker(telemetry.lat_deg, telemetry.lon_deg);
+        }
       }
 
-      // Demo en tiempo real (solo 3 tarjetas de requisitos)
-      paintRequirements();
-      setInterval(randomizeRequirements, 1100);
+      async function fetchLatestTelemetry() {
+        try {
+          const res = await fetch("/api/lecturas/ultima", {
+            method: "GET",
+            headers: { "Accept": "application/json" },
+            cache: "no-store",
+          });
+          if (!res.ok) throw new Error(`HTTP ${res.status}`);
+          const json = await res.json();
+          if (!json?.ok || !json?.data) return;
+          applyTelemetryFromApi(json.data);
+        } catch (error) {
+          console.error("No se pudo leer /api/lecturas/ultima:", error);
+        }
+      }
 
-      // Responsive sidebar behavior
+      paintTelemetryAside();
+      paintRequirements();
+      fetchLatestTelemetry();
+      setInterval(fetchLatestTelemetry, 300);
+
       const mq = window.matchMedia("(min-width: 1024px)");
       mq.addEventListener?.("change", (e) => {
         if (e.matches) {

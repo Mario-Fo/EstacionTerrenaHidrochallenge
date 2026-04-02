@@ -1,0 +1,43 @@
+Guía para Inicializar el Proyecto
+
+Requisitos
+- Base de datos: PostgreSQL
+- Framework: Laravel
+- PHP: Versión 8.3 o superior
+
+Pasos para Inicializar el Proyecto
+
+1. Crear la Base de Datos
+El proyecto utiliza PostgreSQL como base de datos. Asegúrate de crear una base de datos con el siguiente script:
+
+```sql
+-- Aquí puedes incluir el script SQL necesario para crear la base de datos
+```
+
+2. Configurar el Archivo '.env'
+Cada servidor tiene una configuración específica. Modifica las siguientes variables en el archivo `.env`:
+
+DB_CONNECTION=pgsql
+DB_HOST=<tu_host>
+DB_PORT=<tu_puerto>
+DB_DATABASE=<nombre_de_tu_base_de_datos>
+DB_USERNAME=<tu_usuario>
+DB_PASSWORD=<tu_contraseña>
+
+3. Instalar Librerías de Python
+El proyecto utiliza un archivo '.py' para la página de simulación. Instala las librerías necesarias:
+
+cd python_api
+pip install numpy scipy fastapi uvicorn
+
+4. Levantar la API de Python
+Desde la carpeta 'python_api', ejecuta el siguiente comando para iniciar la API:
+
+python -m uvicorn api:app --host 127.0.0.1 --port 8002 --reload
+
+5. Levantar el Servidor de Laravel
+Desde la raíz del proyecto, ejecuta el siguiente comando para iniciar el servidor:
+
+php artisan serve --host=127.0.0.1 --port=8001
+
+Con estos pasos, tu proyecto debería estar listo para ejecutarse correctamente.

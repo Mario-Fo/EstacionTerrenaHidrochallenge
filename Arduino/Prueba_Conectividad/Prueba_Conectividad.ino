@@ -67,7 +67,7 @@ void enviarPOST(const String& jsonPayload) {
 
     // Mostrar respuesta del servidor
     String respuesta = http.getString();
-    Serial.println("📥 Respuesta servidor:");
+    Serial.println("Respuesta servidor:");
     Serial.println(respuesta);
 
   } else {
@@ -107,15 +107,15 @@ void loop() {
     ultimoEnvio = millis();
 
     // Rangos cercanos a: 25.8400365, -97.4544468
-    float lat = randomFloat(25.8350f, 25.8450f);
-    float lon = randomFloat(-97.4600f, -97.4480f);
-    float alt = randomFloat(1000.0f, 1030.0f);
+    float lat = randomFloat(25.84003f, 25.8400380);
+    float lon = randomFloat(-97.45444f, -97.4544480);
+    float alt = randomFloat(10.f, 15.f);
 
     String payload = "[{\"id\":\"PRUEBA\"," "\"pres\":"+String(randomFloat(1000.0f, 1050.0f), 2)+
-    ",\"temp\":"+String(randomFloat(20.0f, 30.0f), 2)+",\"hum\":"+String(randomFloat(40.0f, 60.0f), 2)+","
+    ",\"temp\":"+String(randomFloat(30.0f, 35.0f), 2)+",\"hum\":"+String(randomFloat(55.0f, 60.0f), 2)+","
     "\"lat\":"+String(lat, 6)+",\"long\":"+String(lon, 6)+",\"alt\":"+String(alt, 2)+"," "\"accX\":"+
     String(randomFloat(-1.0f, 1.0f), 2)+",\"accY\":"+String(randomFloat(-1.0f, 1.0f), 2)+",\"accZ\":"
-    +String(randomFloat(-1.0f, 1.0f), 2)+"," "\"RPM\":"+String(random(0, 2))+"}]";
+    +String(randomFloat(-1.0f, 1.0f), 2)+"," "\"RPM\":"+String(random(20, 30))+"}]";
 
     enviarPOST(payload);
   }

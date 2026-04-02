@@ -1,5 +1,5 @@
 @extends('layouts.app')
-
+@section('title', 'Configuración')
 @section('content')
 @php
   $altitudeThreshold = old('altitude_threshold', $requirements['altitude_threshold'] ?? 100);

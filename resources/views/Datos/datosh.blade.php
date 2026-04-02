@@ -1,5 +1,5 @@
 @extends ('layouts.app')
-
+@section('title', 'Datos Históricos')
 @section('content')
 
   <div class="min-h-screen flex flex-col">

@@ -68,22 +68,22 @@
 
         <div class="rounded-xl border border-slate-800 bg-slate-900/40 p-4">
           <p class="font-semibold text-white">Jose Noel Cruz Castillo</p>
-          <p class="text-slate-400 mt-1">Equipo de lanzamiento</p>
+          <p class="text-slate-400 mt-1">Equipo de Recuperacion</p>
         </div>
 
         <div class="rounded-xl border border-slate-800 bg-slate-900/40 p-4">
           <p class="font-semibold text-white">Cintia Guadalupe Iyescas Hernandez</p>
-          <p class="text-slate-400 mt-1">Equipo de recuperacion</p>
-        </div>
-
-        <div class="rounded-xl border border-slate-800 bg-slate-900/40 p-4">
-          <p class="font-semibold text-white">Cristian Marcelino Alfaro Alvarado</p>
           <p class="text-slate-400 mt-1">Estacion Terrena</p>
         </div>
 
         <div class="rounded-xl border border-slate-800 bg-slate-900/40 p-4">
+          <p class="font-semibold text-white">Cristian Marcelino Alfaro Alvarado</p>
+          <p class="text-slate-400 mt-1">Equipo de Lanzamiento</p>
+        </div>
+
+        <div class="rounded-xl border border-slate-800 bg-slate-900/40 p-4">
           <p class="font-semibold text-white">Jorge Luis Cavazos Cisneros</p>
-          <p class="text-slate-400 mt-1">Estacion de lanzamiento</p>
+          <p class="text-slate-400 mt-1">Estacion de Recuperacion</p>
         </div>
       </div>
     </div>
