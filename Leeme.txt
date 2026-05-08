@@ -1,5 +1,6 @@
 Guía para Inicializar el Proyecto
-
+python -m uvicorn api:app --host 127.0.0.1 --port 8002 --reload
+php artisan serve --host=0.0.0.0 --port=8001            
 Requisitos
 - Base de datos: PostgreSQL
 - Framework: Laravel
@@ -9,10 +10,6 @@ Pasos para Inicializar el Proyecto
 
 1. Crear la Base de Datos
 El proyecto utiliza PostgreSQL como base de datos. Asegúrate de crear una base de datos con el siguiente script:
-
-```sql
--- Aquí puedes incluir el script SQL necesario para crear la base de datos
-```
 
 2. Configurar el Archivo '.env'
 Cada servidor tiene una configuración específica. Modifica las siguientes variables en el archivo `.env`:

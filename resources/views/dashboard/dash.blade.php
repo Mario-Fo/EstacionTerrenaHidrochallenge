@@ -1,4 +1,4 @@
-﻿@extends ('layouts.app')
+@extends ('layouts.app')
 @section('title', 'Dashboard')
 @section('content')
   @php
@@ -6,7 +6,7 @@
     $airTimeThreshold = (float) ($requirements['air_time_threshold'] ?? 45);
     $fallSpeedThreshold = (float) ($requirements['fall_speed_threshold'] ?? 8);
   @endphp
-  <div class="min-h-screen flex flex-col">
+  <div class="min-h-850px flex flex-col">
 
     <!-- CONTENT -->
     <div class="flex-1 flex">
@@ -15,75 +15,178 @@
 
       <!-- MAIN -->
       <main id="main" class="flex-1">
-        <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-6 space-y-6">
-
-          <!-- Row: Stage + Chart -->
-          <section class="grid grid-cols-2 xl:grid-cols-1 gap-6">
-            <article class="xl:col-span-1 rounded-2xl border border-slate-800 bg-slate-900/30 p-5">
-              <header class="flex items-center justify-between">
-                <h1 class="text-lg font-semibold">Etapa de mision</h1>
-                <span class="text-xs px-2.5 py-1 rounded-full border border-slate-700 bg-slate-950/60 text-slate-300">
-                  Tiempo real
-                </span>
-              </header>
+        <div class="grid grid-cols-4 grid-rows-3 gap-3 h-[calc(800px-40px)] w-[calc(1280px-40px)] mx-auto m-2">
+          
+          <section class="col-start-1 col-end-3 row-start-1 row-end-3 rounded-2xl border border-slate-800 bg-slate-900/30 p-8">
+            <div class="flex items-center justify-between mb-4">
+              <h3 class="font-semibold">Telemetria</h3>
+              <p class="text-xs text-slate-400">Formato: 2 decimales | Lat/Long: 6 decimales</p>
+            </div>
+            
+            <div class="mt-2 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-2">
+              <div class="flex items-center justify-between mb-4">
+                <p class="text-base font-semibold">Presion</p>
+                <p class="mt-2 text-base font-semibold">
+                  <span id="pVal">101325.00</span>
+                  <span class="text-sm font-medium text-slate-400">Pa</span>
+                </p>
+              </div>   
               
-              <div class="mt-4 grid grid-cols-1 lg:grid-cols-2 gap-4">
-                <div class="rounded-xl border border-slate-800 bg-slate-950/40 p-4">
-                  <p class="text-sm text-slate-400">Estado actual</p>
-                  <div class="mt-2 flex items-center gap-2">
-                    <span class="inline-flex h-2.5 w-2.5 rounded-full bg-emerald-400"></span>
-                    <p class="text-2xl font-semibold" id="missionStage">Desacople</p>
-                  </div>
-                  <div class="mt-4">
-                    <div class="flex items-center justify-between text-xs text-slate-400 mb-1">
-                      <span>Progreso de mision</span>
-                      <span id="missionProgressLabel" class="text-slate-200">0%</span>
-                    </div>
-                    <div class="h-2 w-full rounded-full bg-slate-800 overflow-hidden">
-                      <div id="missionProgressBar" class="h-full w-0 bg-emerald-400"></div>
-                    </div>
-                  </div>
-                  <div class="mt-4 rounded-lg border border-slate-800 bg-slate-900/40 p-3">
-                    <p class="text-xs text-slate-400">Tiempo de mision</p>
-                    <p class="mt-1 text-lg font-semibold text-slate-100 tabular-nums" id="missionTime">T+00:00</p>
-                  </div>
-                  <div class="mt-4">
-                    <p class="text-xs text-slate-400 mb-2">Fases</p>
-                    <div class="flex flex-wrap gap-2 text-xs">
-                      <span data-stage-chip="espera" class="px-2.5 py-1 rounded-full border border-slate-700 bg-slate-950/60 text-slate-300">Espera</span>
-                      <span data-stage-chip="ascenso" class="px-2.5 py-1 rounded-full border border-slate-700 bg-slate-950/60 text-slate-300">Ascenso</span>
-                      <span data-stage-chip="desacople" class="px-2.5 py-1 rounded-full border border-slate-700 bg-slate-950/60 text-slate-300">Desacople</span>
-                      <span data-stage-chip="descenso" class="px-2.5 py-1 rounded-full border border-slate-700 bg-slate-950/60 text-slate-300">Descenso</span>
-                      <span data-stage-chip="aterrizaje" class="px-2.5 py-1 rounded-full border border-slate-700 bg-slate-950/60 text-slate-300">Aterrizaje</span>
-                    </div>
-                  </div>
-                  <div class="mt-4 rounded-lg border border-slate-800 bg-slate-900/40 p-3">
-                    <p class="text-xs text-slate-400">Altura maxima</p>
-                    <p class="mt-1 text-lg font-semibold text-slate-100 tabular-nums">
-                      <span id="apogeeMaxVal">0.00</span>
-                      <span class="text-sm font-medium text-slate-400">m</span>
+              <div class="flex items-center justify-between mb-4">
+                <p class="text-base font-semibold">Temperatura</p>
+                <p class="mt-2 text-base font-semibold">
+                  <span id="tVal">28.50</span>
+                  <span class="text-sm font-medium text-slate-400">C</span>
+                </p>
+              </div>
+
+              <div class="flex items-center justify-between mb-4">
+                <p class="text-base font-semibold">Humedad</p>
+                <p class="mt-2 text-base font-semibold">
+                  <span id="hVal">55.20</span>
+                  <span class="text-sm font-medium text-slate-400">%RH</span>
+                </p>
+              </div>
+                  
+                  <div class="flex items-center justify-between mb-4">
+                    <p class="text-base font-semibold">Aceleracion</p>
+                    <p class="mt-2 text-base font-semibold">
+                      <span id="aVal">0.98</span>
+                      <span class="text-sm font-medium text-slate-400">m/s2</span>
                     </p>
                   </div>
-                </div>
-            <!-- REQUISITOS con estado de color -->
-            <aside class="rounded-xl border border-slate-800 bg-slate-950/40 p-4">
-              <header class="flex items-right justify-between">
-                <h2 class="text-lg font-semibold">Requisitos</h2>
-            <span class="text-xs px-2.5 py-1 rounded-full 
-             border border-emerald-500 
-             bg-emerald-500/20 
-             text-emerald-300">
-              En vivo
-              </span>
-              </header>
 
-              <div class="mt-4 space-y-4">
-                <!-- Apogeo mÃ­nimo 100m -->
-                <div id="cardApogee" class="rounded-xl border border-slate-800 bg-slate-950/40 p-4">
-                  <div class="flex items-start justify-between gap-3">
+                  <div class="flex items-center justify-between mb-4">
+                    <p class="text-base font-semibold">Latitud</p>
+                    <p class="mt-2 text-base font-semibold tabular-nums">
+                      <span id="latVal">25.839818</span>
+                      <span class="text-sm font-medium text-slate-400">deg</span>
+                    </p>
+                  </div>
+                  
+                  <div class="flex items-center justify-between mb-4">
+                    <p class="text-base font-semibold">Aceleracion en X</p>
+                    <p class="mt-2 text-base font-semibold">
+                      <span id="axVal">0.98</span>
+                      <span class="text-sm font-medium text-slate-400">g</span>
+                    </p>
+                  </div>                 
+ 
+                  <div class="flex items-center justify-between mb-4">
+                    <p class="text-base font-semibold">Longitud</p>
+                    <p class="mt-2 text-base font-semibold tabular-nums">
+                      <span id="lonVal">-97.454501</span>
+                      <span class="text-sm font-medium text-slate-400">deg</span>
+                    </p>
+                  </div>              
+
+                  <div class="flex items-center justify-between mb-4">
+                    <p class="text-base font-semibold">Aceleracion en Y</p>
+                    <p class="mt-2 text-base font-semibold">
+                      <span id="ayVal">0.98</span>
+                      <span class="text-sm font-medium text-slate-400">g</span>
+                    </p>
+                  </div>
+
+                  <div class="flex items-center justify-between mb-4">
+                    <p class="text-base font-semibold">Altitud</p>
+                    <p class="mt-2 text-base font-semibold tabular-nums">
+                      <span id="altVal">12.345436</span>
+                      <span class="text-sm font-medium text-slate-400">m</span>
+                    </p>
+                  </div>                                    
+
+                  <div class="flex items-center justify-between mb-4">
+                    <p class="text-base font-semibold">Aceleracion en Z</p>
+                    <p class="mt-2 text-base font-semibold">
+                      <span id="azVal">0.98</span>
+                      <span class="text-sm font-medium text-slate-400">g</span>
+                    </p>
+                  </div>
+            </div>
+
+                  <div class="flex items-center justify-between mb-4">
+                    <p class="text-base font-semibold">RPM</p>
+                    <p class="mt-2 text-base font-semibold">
+                      <span id="rpmVal">54</span>
+                      <span class="text-sm font-medium text-slate-400">RPM</span>
+                    </p>
+                  </div>
+              
+          </section>
+
+          <section class="col-start-3 row-start-1 row-end-3 rounded-2xl border border-slate-800 bg-slate-900/30 p-5">
+            <div class="flex items-center justify-between mb-1">
+                <h1 class="text-sm font-semibold">Etapa de mision</h1>
+                <div class="">
+                  <p class="text-sm font-semibold">Altura maxima
+                    <span class="text-xs font-medium" id="apogeeMaxVal">0.00</span>
+                    <span class="text-xs font-medium text-slate-400">m</span>
+                  </p>
+                </div>
+            </div>
+              
+              <div class="">
+                <div class="flex items-center justify-between">
+                  <p class="text-sm font-semibold">Tiempo de mision</p>
+                  <p class="mt-1 text-sm font-semibold text-slate-100 tabular-nums" id="missionTime">T+00:00</p>
+                </div>
+
+                <div class="mt-1">
+                  <div class="flex items-center justify-between text-sm font-semibold mb-1">
+                    <span>Progreso de mision</span>
+                    <span id="missionProgressLabel" class="text-slate-200">0%</span>
+                  </div>
+
+                  <div class="h-2 w-full rounded-full bg-slate-800 overflow-hidden">
+                    <div id="missionProgressBar" class="h-full w-0 bg-emerald-400"></div>
+                  </div>
+                </div>
+                  
+                <div class="mt-2">
+                  <p class="text-lg font-semibold mb-2">Fases</p>
+                  <div class="flex flex-wrap gap-3 text-base grid grid-cols-1">
+                    <span data-stage-chip="espera" class="px-2.5 py-1 rounded-full border border-slate-700 bg-slate-950/60 text-slate-300">Espera</span>
+                    <span data-stage-chip="ascenso" class="px-2.5 py-1 rounded-full border border-slate-700 bg-slate-950/60 text-slate-300">Ascenso</span>
+                    <span data-stage-chip="desacople" class="px-2.5 py-1 rounded-full border border-slate-700 bg-slate-950/60 text-slate-300">Desacople</span>
+                    <span data-stage-chip="descenso" class="px-2.5 py-1 rounded-full border border-slate-700 bg-slate-950/60 text-slate-300">Descenso</span>
+                    <span data-stage-chip="aterrizaje" class="px-2.5 py-1 rounded-full border border-slate-700 bg-slate-950/60 text-slate-300">Aterrizaje</span>
+                  </div>
+                </div>
+
+                
+              </div>
+          </section>
+
+          <section class="col-start-4 row-start-1 row-end-4 self-start h-[calc(100%)] rounded-2xl border border-slate-800 bg-slate-900/30 p-5 overflow-hidden">          
+            <h3 class="font-semibold">Graficas</h3>
+            <div class="mt-2 h-[calc(100%-2rem)] space-y-1 overflow-y-auto pr-1 [&::-webkit-scrollbar]:hidden" style="-ms-overflow-style: none; scrollbar-width: none;">
+              @include('Graficas.altura_vs_tiempo')
+              @include('Graficas.aceleracion_vs_tiempo')
+              @include('Graficas.velocidad_vertical_vs_tiempo')
+            </div>
+          </section>
+
+          <section class="col-start-2 row-start-3 rounded-2xl border border-slate-800 bg-slate-900/30 p-5">
+            <div class="flex items-center justify-between">    
+              <h1 class="font-semibold">Ubicacion (GPS)</h1>
+              <p class="text-xs text-slate-400">Coordenadas actuales:
+                <span id="coordsLabel" class="text-slate-200 tabular-nums"></span>
+              </p>
+            </div>
+            <div id="map" class="mt-2 h-32 w-full rounded-xl border border-slate-800 overflow-hidden"></div>             
+          </section>
+
+          <section class="col-start-3 row-start-3 rounded-2xl border border-slate-800 bg-slate-900/30 p-5">
+            <h1 class="text-sm font-semibold">Requisitos</h1>
+            <aside class="">
+              <div class="mt-2 space-y-1">
+               <!-- Apogeo mÃ­nimo 100m -->
+                <div id="cardApogee" class="">
+                  <div class="flex items-start justify-between gap-1">
                     <div>
-                      <p class="text-sm text-slate-400">Altura (min. {{ number_format($altitudeThreshold, 2, '.', '') }} m)</p>
-                      <p class="mt-2 text-2xl font-semibold">
+                      <p class="text-sm">Altura (min. {{ number_format($altitudeThreshold, 2, '.', '') }} m)</p>
+                      <p class="text-xs font-semibold">
                         <span id="apogeeVal"></span>
                         <span class="text-sm font-medium text-slate-400">m</span>
                       </p>
@@ -95,11 +198,11 @@
                 </div>
 
                 <!-- Velocidad mÃ¡xima 8 m/s -->
-                <div id="cardFall" class="rounded-xl border border-slate-800 bg-slate-950/40 p-4">
-                  <div class="flex items-start justify-between gap-3">
+                <div id="cardFall" class="">
+                  <div class="flex items-start justify-between gap-1">
                     <div>
-                      <p class="text-sm text-slate-400">Velocidad de caida (max. {{ number_format($fallSpeedThreshold, 2, '.', '') }} m/s)</p>
-                      <p class="mt-2 text-2xl font-semibold">
+                      <p class="text-sm">Vel. caida (max. {{ number_format($fallSpeedThreshold, 2, '.', '') }} m/s)</p>
+                      <p class="text-xs font-semibold">
                         <span id="fallVal"></span>
                         <span class="text-sm font-medium text-slate-400">m/s</span>
                       </p>
@@ -109,11 +212,12 @@
                     </span>
                   </div>
                 </div>
-                  <div id="cardAireTime" class="rounded-xl border border-slate-800 bg-slate-950/40 p-4">
-                  <div class="flex items-start justify-between gap-3">
+
+                <div id="cardAireTime" class="">
+                  <div class="flex items-start justify-between gap-1">
                     <div>
-                      <p class="text-sm text-slate-400">Tiempo en el aire (min. {{ number_format($airTimeThreshold, 2, '.', '') }} s)</p>
-                      <p class="mt-2 text-2xl font-semibold">
+                      <p class="text-sm">Tiempo en aire (min. {{ number_format($airTimeThreshold, 2, '.', '') }} s)</p>
+                      <p class="text-xs font-semibold">
                         <span id="aireTimeVal"></span>
                         <span class="text-sm font-medium text-slate-400">s</span>
                       </p>
@@ -123,132 +227,17 @@
                     </span>
                   </div>
                 </div>
-              </div>
-            </aside>
-
-              </div>
-            </article>
           </section>
 
-          <section class="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
-            <div class="lg:col-span-2 space-y-6">
-              @include('Graficas.altura_vs_tiempo')
-              @include('Graficas.aceleracion_vs_tiempo')
-              @include('Graficas.velocidad_vertical_vs_tiempo')
+          <!-- HACER LOS COMANDOS, SOLO ESTAN DE DECORACION AHORITA-->
+          <section class="col-start-1 col-end-2 row-start-3 rounded-2xl border border-slate-800 bg-slate-900/30 p-5">
+            <h1 class="text-sm font-semibold mb-2">Comandos</h1>
+            <div class="flex items-right justify-between mb-1">
+              <button class="px-3 py-1 rounded-md bg-emerald-500/20 border border-emerald-500/50 text-sm font-medium text-emerald-200 hover:bg-emerald-500/30 transition" onclick="fetch('/api/comandos/desplegar', { method: 'POST' })">Desplegar paracaidas</button>
+              <button class="ml-2 px-3 py-1 rounded-md bg-rose-500/20 border border-rose-500/50 text-sm font-medium text-rose-200 hover:bg-rose-500/30 transition" onclick="fetch('/api/comandos/resetear', { method: 'POST' })">Resetear</button>
             </div>
-
-            <aside class="lg:col-span-1 lg:sticky lg:top-24 self-start">
-              <article class="telemetry-scroll rounded-2xl border border-slate-800 bg-slate-900/30 p-5 max-h-[calc(100vh-7rem)] overflow-y-auto">
-                <header class="flex items-center justify-between flex-wrap gap-2">
-                  <h2 class="text-lg font-semibold">Telemetria (SI)</h2>
-                  <p class="text-xs text-slate-400">Formato: 2 decimales | Lat/Long: 6 decimales</p>
-                </header>
-
-                <div class="mt-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-4">
-                  <div class="rounded-xl border border-slate-800 bg-slate-950/40 p-4">
-                    <p class="text-sm text-slate-400">Presion</p>
-                    <p class="mt-2 text-2xl font-semibold">
-                      <span id="pVal">101325.00</span>
-                      <span class="text-sm font-medium text-slate-400">Pa</span>
-                    </p>
-                  </div>
-
-                  <div class="rounded-xl border border-slate-800 bg-slate-950/40 p-4">
-                    <p class="text-sm text-slate-400">Temperatura</p>
-                    <p class="mt-2 text-2xl font-semibold">
-                      <span id="tVal">28.50</span>
-                      <span class="text-sm font-medium text-slate-400">C</span>
-                    </p>
-                  </div>
-
-                  <div class="rounded-xl border border-slate-800 bg-slate-950/40 p-4">
-                    <p class="text-sm text-slate-400">Humedad</p>
-                    <p class="mt-2 text-2xl font-semibold">
-                      <span id="hVal">55.20</span>
-                      <span class="text-sm font-medium text-slate-400">%RH</span>
-                    </p>
-                  </div>
-
-                  <div class="rounded-xl border border-slate-800 bg-slate-950/40 p-4">
-                    <p class="text-sm text-slate-400">Latitud</p>
-                    <p class="mt-2 text-2xl font-semibold tabular-nums">
-                      <span id="latVal">25.839818</span>
-                      <span class="text-sm font-medium text-slate-400">deg</span>
-                    </p>
-                  </div>
-
-                  <div class="rounded-xl border border-slate-800 bg-slate-950/40 p-4">
-                    <p class="text-sm text-slate-400">Longitud</p>
-                    <p class="mt-2 text-2xl font-semibold tabular-nums">
-                      <span id="lonVal">-97.454501</span>
-                      <span class="text-sm font-medium text-slate-400">deg</span>
-                    </p>
-                  </div>
-
-                  <div class="rounded-xl border border-slate-800 bg-slate-950/40 p-4">
-                    <p class="text-sm text-slate-400">Altitud</p>
-                    <p class="mt-2 text-2xl font-semibold tabular-nums">
-                      <span id="altVal">12.345436</span>
-                      <span class="text-sm font-medium text-slate-400">m</span>
-                    </p>
-                  </div>
-
-                  <div class="rounded-xl border border-slate-800 bg-slate-950/40 p-4">
-                    <p class="text-sm text-slate-400">Aceleracion</p>
-                    <p class="mt-2 text-2xl font-semibold">
-                      <span id="aVal">0.98</span>
-                      <span class="text-sm font-medium text-slate-400">m/s2</span>
-                    </p>
-                  </div>
-
-                  <div class="rounded-xl border border-slate-800 bg-slate-950/40 p-4">
-                    <p class="text-sm text-slate-400">Aceleracion en X</p>
-                    <p class="mt-2 text-2xl font-semibold">
-                      <span id="axVal">0.98</span>
-                      <span class="text-sm font-medium text-slate-400">g</span>
-                    </p>
-                  </div>
-
-                  <div class="rounded-xl border border-slate-800 bg-slate-950/40 p-4">
-                    <p class="text-sm text-slate-400">Aceleracion en Y</p>
-                    <p class="mt-2 text-2xl font-semibold">
-                      <span id="ayVal">0.98</span>
-                      <span class="text-sm font-medium text-slate-400">g</span>
-                    </p>
-                  </div>
-
-                  <div class="rounded-xl border border-slate-800 bg-slate-950/40 p-4">
-                    <p class="text-sm text-slate-400">Aceleracion en Z</p>
-                    <p class="mt-2 text-2xl font-semibold">
-                      <span id="azVal">0.98</span>
-                      <span class="text-sm font-medium text-slate-400">g</span>
-                    </p>
-                  </div>
-
-                  <div class="rounded-xl border border-slate-800 bg-slate-950/40 p-4">
-                    <p class="text-sm text-slate-400">RPM</p>
-                    <p class="mt-2 text-2xl font-semibold">
-                      <span id="rpmVal">54</span>
-                      <span class="text-sm font-medium text-slate-400">RPM</span>
-                    </p>
-                  </div>
-                </div>
-              </article>
-            </aside>
           </section>
-          <section class="rounded-2xl border border-slate-800 bg-slate-900/30 p-5">
-  <header class="flex items-center justify-between flex-wrap gap-2">
-    <h2 class="text-lg font-semibold">Ubicacion (GPS)</h2>
-  </header>
-
-  <div id="map" class="mt-4 h-72 w-full rounded-xl border border-slate-800 overflow-hidden"></div>
-
-  <p class="mt-3 text-xs text-slate-400">
-    Coordenadas actuales:
-    <span id="coordsLabel" class="text-slate-200 tabular-nums">â€”</span>
-  </p>
-</section>
-        </div>
+        </div>  
       </main>
     </div>
   </div>
@@ -473,9 +462,9 @@
 
       function applyStatus(cardEl, badgeEl, status, label) {
         cardEl.classList.remove(
-          "border-emerald-500/60", "bg-emerald-500/10",
-          "border-amber-500/60", "bg-amber-500/10",
-          "border-rose-500/60", "bg-rose-500/10"
+          "border-emerald-500/60",
+          "border-amber-500/60",
+          "border-rose-500/60"
         );
         badgeEl.classList.remove(
           "border-emerald-500/50", "bg-emerald-500/10", "text-emerald-200",
@@ -484,13 +473,13 @@
         );
 
         if (status === "ok") {
-          cardEl.classList.add("border-emerald-500/60", "bg-emerald-500/10");
+          cardEl.classList.add("border-emerald-500/60");
           badgeEl.classList.add("border-emerald-500/50", "bg-emerald-500/10", "text-emerald-200");
         } else if (status === "near") {
-          cardEl.classList.add("border-amber-500/60", "bg-amber-500/10");
+          cardEl.classList.add("border-amber-500/60");
           badgeEl.classList.add("border-amber-500/50", "bg-amber-500/10", "text-amber-200");
         } else {
-          cardEl.classList.add("border-rose-500/60", "bg-rose-500/10");
+          cardEl.classList.add("border-rose-500/60");
           badgeEl.classList.add("border-rose-500/50", "bg-rose-500/10", "text-rose-200");
         }
 

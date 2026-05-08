@@ -1,6 +1,6 @@
       <!-- FOOTER -->
        <footer class="border-t border-slate-800 bg-slate-950 mt-10">
-  <div class="max-w-7xl mx-auto px-6 py-10">
+  <div class="max-w-7xl mx-auto px-6 py-6">
 
     <!-- Parte superior: Equipo e Institución -->
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">

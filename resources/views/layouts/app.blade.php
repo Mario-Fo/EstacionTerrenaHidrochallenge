@@ -2,7 +2,7 @@
 
     @include('partials.header')
 
-    <main id="main" class="pt-16">
+    <main id="main" class="pt-2">
         @yield('content')
     </main>
 

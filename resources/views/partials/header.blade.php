@@ -53,9 +53,6 @@
 />
     </head>
 <body class="bg-slate-950 text-slate-100 min-h-screen">
-  <a href="#main" class="sr-only sr-only-focusable px-3 py-2 bg-slate-800 rounded-md m-2 inline-block">
-    Saltar al contenido principal
-  </a>
     <!-- HEADER -->
     <header class="ssticky top-0 z-[2000] border-b border-slate-800 bg-slate-950/80 backdrop-blur">
       <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
@@ -63,7 +60,7 @@
           <div class="flex items-center gap-3">
 
             <!-- Logo placeholder circular -->
-            <div class="h-12 w-12 aspect-square overflow-hidden shrink-0 rounded-full border border-slate-700 bg-slate-800">
+            <div class="h-12 w-12 aspect-square overflow-hidden shrink-0 rounded-full ">
                     <img src="{{ asset('images/image.png') }}" alt="Logo" class="block h-full w-full rounded-full object-cover" />
             </div>
 
