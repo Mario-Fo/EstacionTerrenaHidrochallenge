@@ -103,7 +103,6 @@
                       <span class="text-sm font-medium text-slate-400">g</span>
                     </p>
                   </div>
-            </div>
 
                   <div class="flex items-center justify-between mb-4">
                     <p class="text-base font-semibold">RPM</p>
@@ -112,7 +111,9 @@
                       <span class="text-sm font-medium text-slate-400">RPM</span>
                     </p>
                   </div>
-              
+
+                  <div></div>
+            </div>
           </section>
 
           <section class="col-start-3 row-start-1 row-end-3 rounded-2xl border border-slate-800 bg-slate-900/30 p-5">
@@ -167,7 +168,7 @@
             </div>
           </section>
 
-          <section class="col-start-2 row-start-3 rounded-2xl border border-slate-800 bg-slate-900/30 p-5">
+          <section class="col-start-3 row-start-3 rounded-2xl border border-slate-800 bg-slate-900/30 p-5">
             <div class="flex items-center justify-between">    
               <h1 class="font-semibold">Ubicacion (GPS)</h1>
               <p class="text-xs text-slate-400">Coordenadas actuales:
@@ -177,7 +178,7 @@
             <div id="map" class="mt-2 h-32 w-full rounded-xl border border-slate-800 overflow-hidden"></div>             
           </section>
 
-          <section class="col-start-3 row-start-3 rounded-2xl border border-slate-800 bg-slate-900/30 p-5">
+          <section class="col-start-2 row-start-3 rounded-2xl border border-slate-800 bg-slate-900/30 p-5">
             <h1 class="text-sm font-semibold">Requisitos</h1>
             <aside class="">
               <div class="mt-2 space-y-1">
