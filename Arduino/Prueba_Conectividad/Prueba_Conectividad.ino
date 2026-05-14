@@ -3,7 +3,7 @@
 
 const char* ssid = "IZZI-49DC";
 const char* password = "F82DC03649DC";
-const char* serverUrl = "http://192.168.0.29:8000/api/lecturas-multi";
+const char* serverUrl = "http://192.168.0.32:8000/api/lecturas-multi";
 
 unsigned long ultimoIntentoWiFi = 0;
 unsigned long ultimoEnvio = 0;

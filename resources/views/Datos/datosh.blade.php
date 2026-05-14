@@ -121,14 +121,7 @@
         </div>
 
         <div class="flex items-center gap-2">
-          <select
-            id="pageSize"
-            class="rounded-xl border border-slate-800 bg-slate-900/40 px-3 py-2 text-sm text-slate-100 focus:outline-none focus:ring-2 focus:ring-slate-700"
-          >
-            <option value="10">10 por página</option>
-            <option value="25">25 por página</option>
-            <option value="50">50 por página</option>
-          </select>
+          <span class="text-xs text-slate-400">Mostrando 10 por página</span>
         </div>
       </div>
 
@@ -138,12 +131,11 @@
             <tr class="text-left">
               <th class="px-4 py-3 whitespace-nowrap">Fecha/Hora</th>
               <th class="px-4 py-3 whitespace-nowrap">Misión</th>
+              <th class="px-4 py-3 whitespace-nowrap">Presión</th>
               <th class="px-4 py-3 whitespace-nowrap">Latitud</th>
+              <th class="px-4 py-3 whitespace-nowrap">Longitud</th>
               <th class="px-4 py-3 whitespace-nowrap">RPM</th>
-              <th class="px-4 py-3 whitespace-nowrap">Vel. Caída (m/s)</th>
-              <th class="px-4 py-3 whitespace-nowrap">Tiempo (s)</th>
               <th class="px-4 py-3 whitespace-nowrap">Aceleración (m/s²)</th>
-              <th class="px-4 py-3 whitespace-nowrap">Notas</th>
             </tr>
           </thead>
           <tbody id="rows" class="divide-y divide-slate-800 text-slate-200">
@@ -206,8 +198,11 @@
 </main>
 
 <script>
-  // Datos DEMO (cámbialos por tus datos reales desde Laravel/DB)
-  let rawData = [
+  // Datos de BD inyectados por Laravel
+  const serverData = @json($historicalData ?? []);
+
+  // Fallback demo si no hay datos en BD
+  let rawData = serverData.length ? serverData : [
     { ts: "2026-02-28T10:20:00", mission: "HYD-012", lat: 25.8694, rpm: 1820, fall_speed: 12.4, mission_time: 95, accel: 9.7, notes: "Vuelo estable" },
     { ts: "2026-02-28T11:05:00", mission: "HYD-012", lat: 25.8696, rpm: 1905, fall_speed: 13.1, mission_time: 98, accel: 10.4, notes: "Ligera deriva" },
     { ts: "2026-03-01T09:40:00", mission: "HYD-013", lat: 25.8702, rpm: 1760, fall_speed: 11.8, mission_time: 90, accel: 9.2, notes: "Recuperación rápida" },
@@ -218,7 +213,7 @@
   // Estado UI
   let filtered = [...rawData];
   let page = 1;
-  let pageSize = 10;
+  const pageSize = 10;
 
   // Helpers
   const $ = (id) => document.getElementById(id);
@@ -248,9 +243,9 @@
 
       if (q) {
         const blob = [
-          r.ts, r.mission, r.notes,
-          String(r.lat), String(r.rpm),
-          String(r.fall_speed), String(r.mission_time), String(r.accel)
+          r.ts, r.mission,
+          String(r.pres), String(r.lat), String(r.lon),
+          String(r.rpm), String(r.accel)
         ].join(" ").toLowerCase();
         if (!blob.includes(q)) return false;
       }
@@ -297,12 +292,11 @@ function renderKPIs() {
       <tr class="hover:bg-slate-900/30 transition cursor-pointer" data-ix="${start + idx}">
         <td class="px-4 py-3 whitespace-nowrap text-slate-300">${toLocal(r.ts)}</td>
         <td class="px-4 py-3 whitespace-nowrap font-medium">${r.mission || "—"}</td>
+        <td class="px-4 py-3 whitespace-nowrap">${Number.isFinite(r.pres) ? fmt(r.pres, 2) : "—"}</td>
         <td class="px-4 py-3 whitespace-nowrap">${Number.isFinite(r.lat) ? fmt(r.lat, 5) : "—"}</td>
+        <td class="px-4 py-3 whitespace-nowrap">${Number.isFinite(r.lon) ? fmt(r.lon, 5) : "—"}</td>
         <td class="px-4 py-3 whitespace-nowrap">${Number.isFinite(r.rpm) ? fmtInt(r.rpm) : "—"}</td>
-        <td class="px-4 py-3 whitespace-nowrap">${Number.isFinite(r.fall_speed) ? fmt(r.fall_speed, 2) : "—"}</td>
-        <td class="px-4 py-3 whitespace-nowrap">${Number.isFinite(r.mission_time) ? fmt(r.mission_time, 1) : "—"}</td>
         <td class="px-4 py-3 whitespace-nowrap">${Number.isFinite(r.accel) ? fmt(r.accel, 2) : "—"}</td>
-        <td class="px-4 py-3 whitespace-nowrap text-slate-400">${(r.notes || "—")}</td>
       </tr>
     `).join("");
 
@@ -332,12 +326,11 @@ function renderKPIs() {
     $("modalSub").textContent = `${r.mission || "—"} · ${toLocal(r.ts)}`;
 
     const items = [
+      ["Presión", Number.isFinite(r.pres) ? fmt(r.pres, 2) + " hPa" : "—"],
       ["Latitud", Number.isFinite(r.lat) ? fmt(r.lat, 6) + " °" : "—"],
+      ["Longitud", Number.isFinite(r.lon) ? fmt(r.lon, 6) + " °" : "—"],
       ["RPM", Number.isFinite(r.rpm) ? fmtInt(r.rpm) + " rpm" : "—"],
-      ["Velocidad de caída", Number.isFinite(r.fall_speed) ? fmt(r.fall_speed, 2) + " m/s" : "—"],
-      ["Tiempo de misión", Number.isFinite(r.mission_time) ? fmt(r.mission_time, 1) + " s" : "—"],
       ["Aceleración", Number.isFinite(r.accel) ? fmt(r.accel, 2) + " m/s²" : "—"],
-      ["Notas", r.notes || "—"],
     ];
 
     $("modalBody").innerHTML = items.map(([k,v]) => `
@@ -354,7 +347,7 @@ function renderKPIs() {
 
   // CSV Export simple
   function exportCSV() {
-    const cols = ["ts","mission","lat","rpm","fall_speed","mission_time","accel","notes"];
+    const cols = ["ts","mission","pres","lat","lon","rpm","accel"];
     const lines = [
       cols.join(","),
       ...filtered.map(r => cols.map(c => {
@@ -378,12 +371,6 @@ function renderKPIs() {
   // Eventos
   $("btnApply").addEventListener("click", applyFilters);
   $("btnReset").addEventListener("click", resetFilters);
-
-  $("pageSize").addEventListener("change", (e) => {
-    pageSize = Number(e.target.value) || 10;
-    page = 1;
-    renderAll();
-  });
 
   $("prevPage").addEventListener("click", () => { page--; renderTable(); });
   $("nextPage").addEventListener("click", () => { page++; renderTable(); });

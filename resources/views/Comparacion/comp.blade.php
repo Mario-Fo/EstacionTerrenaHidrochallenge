@@ -132,6 +132,13 @@
                 <tbody id="rowsA" class="divide-y divide-slate-800 text-slate-200"></tbody>
               </table>
             </div>
+            <div class="p-4 border-t border-slate-800 flex items-center justify-between gap-3">
+              <p id="pageInfoA" class="text-xs text-slate-400">Página 1 de 1</p>
+              <div class="flex items-center gap-2">
+                <button id="prevA" type="button" class="rounded-xl border border-slate-800 bg-slate-900/40 px-3 py-2 text-xs text-slate-200 hover:bg-slate-900/70 transition">Anterior</button>
+                <button id="nextA" type="button" class="rounded-xl border border-slate-800 bg-slate-900/40 px-3 py-2 text-xs text-slate-200 hover:bg-slate-900/70 transition">Siguiente</button>
+              </div>
+            </div>
           </article>
 
           <!-- ===================== MISION B ===================== -->
@@ -234,6 +241,13 @@
                 <tbody id="rowsB" class="divide-y divide-slate-800 text-slate-200"></tbody>
               </table>
             </div>
+            <div class="p-4 border-t border-slate-800 flex items-center justify-between gap-3">
+              <p id="pageInfoB" class="text-xs text-slate-400">Página 1 de 1</p>
+              <div class="flex items-center gap-2">
+                <button id="prevB" type="button" class="rounded-xl border border-slate-800 bg-slate-900/40 px-3 py-2 text-xs text-slate-200 hover:bg-slate-900/70 transition">Anterior</button>
+                <button id="nextB" type="button" class="rounded-xl border border-slate-800 bg-slate-900/40 px-3 py-2 text-xs text-slate-200 hover:bg-slate-900/70 transition">Siguiente</button>
+              </div>
+            </div>
           </article>
 
         </section>
@@ -243,8 +257,11 @@
   </div>
 
   <script>
-    // DEMO: mismos datos, latitud -> altitud
-    const demoData = [
+    // Datos de BD inyectados por Laravel
+    const serverData = @json($missionData ?? []);
+
+    // Fallback demo si no hay datos en BD
+    const demoData = serverData.length ? serverData : [
       { ts: "2026-02-28T10:20:00", mission: "HYD-012", altitude: 25.8694, rpm: 1820, fall_speed: 12.4, mission_time: 95,  accel: 9.7,  notes: "Vuelo estable" },
       { ts: "2026-02-28T11:05:00", mission: "HYD-012", altitude: 25.8696, rpm: 1905, fall_speed: 13.1, mission_time: 98,  accel: 10.4, notes: "Ligera deriva" },
       { ts: "2026-03-01T09:40:00", mission: "HYD-013", altitude: 25.8702, rpm: 1760, fall_speed: 11.8, mission_time: 90,  accel: 9.2,  notes: "Recuperación rápida" },
@@ -253,8 +270,8 @@
     ];
 
     const state = {
-      A: { raw: [...demoData], filtered: [] },
-      B: { raw: [...demoData], filtered: [] },
+      A: { raw: [...demoData], filtered: [], page: 1, perPage: 10 },
+      B: { raw: [...demoData], filtered: [], page: 1, perPage: 10 },
     };
 
     const $ = (id) => document.getElementById(id);
@@ -283,10 +300,10 @@
 
     function fillMissionOptions(panel) {
       const sel = $("mission" + panel);
-      const missions = uniqueSorted(state[panel].raw.map(r => r.mission));
+      const missions = uniqueSorted(state[panel].raw.map(r => r.mission).filter(Boolean));
       sel.innerHTML = missions.map(m => `<option value="${m}">${m}</option>`).join("");
-      if (panel === "A") sel.value = missions.includes("HYD-012") ? "HYD-012" : missions[0] || "";
-      if (panel === "B") sel.value = missions.includes("HYD-014") ? "HYD-014" : missions[0] || "";
+      if (panel === "A") sel.value = missions.includes("PRUEBA") ? "PRUEBA" : missions[0] || "";
+      if (panel === "B") sel.value = missions.includes("PRUEBA_E2E") ? "PRUEBA_E2E" : missions[1] || missions[0] || "";
     }
 
     function fillDateDropdowns(panel) {
@@ -330,11 +347,20 @@
       });
 
       state[panel].filtered = rows;
+      state[panel].page = 1;
       renderPanel(panel);
     }
 
     function renderPanel(panel) {
       const rows = state[panel].filtered;
+      const perPage = state[panel].perPage;
+      const totalPages = Math.max(1, Math.ceil(rows.length / perPage));
+      if (state[panel].page > totalPages) state[panel].page = totalPages;
+      if (state[panel].page < 1) state[panel].page = 1;
+      const page = state[panel].page;
+      const start = (page - 1) * perPage;
+      const end = start + perPage;
+      const pageRows = rows.slice(start, end);
 
       $("info" + panel).textContent = `${rows.length} registro(s)`;
 
@@ -350,7 +376,7 @@
       $("avgTime" + panel).textContent = Number.isFinite(avgTime) ? fmt(avgTime, 1) : "—";
       $("avgAcc" + panel).textContent = Number.isFinite(avgAcc) ? fmt(avgAcc, 2) : "—";
 
-      $("rows" + panel).innerHTML = rows.map(r => `
+      $("rows" + panel).innerHTML = pageRows.map(r => `
         <tr class="hover:bg-slate-900/30 transition">
           <td class="px-4 py-3 whitespace-nowrap text-slate-300">${toLocal(r.ts)}</td>
           <td class="px-4 py-3 whitespace-nowrap font-medium">${r.mission || "—"}</td>
@@ -362,6 +388,10 @@
           <td class="px-4 py-3 whitespace-nowrap text-slate-400">${r.notes || "—"}</td>
         </tr>
       `).join("");
+
+      $("pageInfo" + panel).textContent = `Página ${page} de ${totalPages}`;
+      $("prev" + panel).disabled = page <= 1;
+      $("next" + panel).disabled = page >= totalPages;
     }
 
     // CSV Import por panel (requiere encabezados):
@@ -445,6 +475,16 @@
         const file = e.target.files?.[0];
         if (file) importCSV(panel, file);
         e.target.value = "";
+      });
+
+      $("prev" + panel).addEventListener("click", () => {
+        state[panel].page -= 1;
+        renderPanel(panel);
+      });
+
+      $("next" + panel).addEventListener("click", () => {
+        state[panel].page += 1;
+        renderPanel(panel);
       });
     }
 
