@@ -8,6 +8,8 @@ class LecturaSensor extends Model
 {
     protected $table = 'lecturas_sensores';
 
+    protected $primaryKey = 'id_db';
+
     protected $fillable = [
         'id_sensor',
         'pres',

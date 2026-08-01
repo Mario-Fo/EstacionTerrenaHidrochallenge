@@ -13,22 +13,6 @@
           </p>
         </div>
 
-        <!-- Controles globales -->
-        <section class="rounded-2xl border border-slate-800 bg-slate-950/40 backdrop-blur p-4 mb-6">
-          <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
-            <div class="text-sm text-slate-300">
-              Demo activo: Misiones simuladas HYD-012 vs HYD-014.
-            </div>
-            <button
-              id="btnResetAll"
-              class="rounded-xl border border-slate-800 bg-slate-900/20 px-4 py-2 text-sm text-slate-200 hover:bg-slate-900/40 transition"
-              type="button"
-            >
-              Reset (Todo)
-            </button>
-          </div>
-        </section>
-
         <!-- 2 columnas -->
         <section class="grid grid-cols-1 lg:grid-cols-2 gap-6">
 

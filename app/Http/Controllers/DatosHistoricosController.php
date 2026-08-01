@@ -3,6 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Models\LecturaSensor;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Illuminate\View\View;
 
 class DatosHistoricosController extends Controller
@@ -11,6 +13,7 @@ class DatosHistoricosController extends Controller
     {
         $historicalData = LecturaSensor::query()
             ->select([
+                'id_db',
                 'id_sensor',
                 'pres',
                 'lat',
@@ -35,6 +38,7 @@ class DatosHistoricosController extends Controller
                 }
 
                 return [
+                    'id_db' => (int) $row->id_db,
                     'ts' => optional($row->created_at)?->toISOString(),
                     'mission' => (string) $row->id_sensor,
                     'pres' => is_numeric($row->pres) ? (float) $row->pres : null,
@@ -49,6 +53,29 @@ class DatosHistoricosController extends Controller
 
         return view('Datos.datosh', [
             'historicalData' => $historicalData,
+        ]);
+    }
+
+    public function update(Request $request, int $id): JsonResponse
+    {
+        $validated = $request->validate([
+            'mission' => ['required', 'string', 'max:50'],
+            'pres' => ['required', 'numeric'],
+        ]);
+
+        $lectura = LecturaSensor::query()->findOrFail($id);
+        $lectura->update([
+            'id_sensor' => $validated['mission'],
+            'pres' => $validated['pres'],
+        ]);
+
+        return response()->json([
+            'ok' => true,
+            'data' => [
+                'id_db' => (int) $lectura->id_db,
+                'mission' => (string) $lectura->id_sensor,
+                'pres' => (float) $lectura->pres,
+            ],
         ]);
     }
 }

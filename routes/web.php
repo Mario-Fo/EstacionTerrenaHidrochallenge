@@ -14,6 +14,9 @@ Route::get('/comparacion', [CompararController::class, 'index'])->name('comparac
 Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
 Route::get('/datosh', [DatosHistoricosController::class, 'index'])->name('datosh');
+Route::patch('/datosh/{id}', [DatosHistoricosController::class, 'update'])
+    ->whereNumber('id')
+    ->name('datosh.update');
 
 Route::get('/config', [ConfigController::class, 'edit'])->name('config');
 Route::post('/config', [ConfigController::class, 'update'])->name('config.update');

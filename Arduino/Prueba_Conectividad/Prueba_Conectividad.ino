@@ -4,10 +4,38 @@
 const char* ssid = "IZZI-49DC";
 const char* password = "F82DC03649DC";
 const char* serverUrl = "http://192.168.0.32:8000/api/lecturas-multi";
+const char* commandUrl = "http://192.168.0.32:8001/api/comandos/pendiente";
 
 unsigned long ultimoIntentoWiFi = 0;
 unsigned long ultimoEnvio = 0;
+unsigned long ultimaConsultaComando = 0;
 const unsigned long intervaloEnvioMs = 300;
+const unsigned long intervaloComandoMs = 250;
+
+void procesarComando(char comando) {
+  if (comando == 'e') {
+    Serial.println("Comando recibido: e (desplegar paracaidas)");
+    // Agrega aqui la activacion fisica del servo o mecanismo de despliegue.
+  }
+}
+
+void consultarComando() {
+  if (WiFi.status() != WL_CONNECTED) return;
+
+  HTTPClient http;
+  http.begin(commandUrl);
+  int code = http.GET();
+
+  if (code == HTTP_CODE_OK) {
+    String respuesta = http.getString();
+    respuesta.trim();
+    if (respuesta.length() > 0) {
+      procesarComando(respuesta.charAt(0));
+    }
+  }
+
+  http.end();
+}
 
 float randomFloat(float minValue, float maxValue) {
   long r = random(0, 1000000);
@@ -103,6 +131,11 @@ void setup() {
 void loop() {
   asegurarWiFi();
 
+  if (WiFi.status() == WL_CONNECTED && millis() - ultimaConsultaComando >= intervaloComandoMs) {
+    ultimaConsultaComando = millis();
+    consultarComando();
+  }
+
   if (WiFi.status() == WL_CONNECTED && millis() - ultimoEnvio >= intervaloEnvioMs) {
     ultimoEnvio = millis();
 
@@ -122,6 +155,5 @@ void loop() {
 
   delay(20);
 }
-
 
 

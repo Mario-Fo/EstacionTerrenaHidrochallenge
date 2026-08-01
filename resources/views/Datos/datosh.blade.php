@@ -136,6 +136,7 @@
               <th class="px-4 py-3 whitespace-nowrap">Longitud</th>
               <th class="px-4 py-3 whitespace-nowrap">RPM</th>
               <th class="px-4 py-3 whitespace-nowrap">Aceleración (m/s²)</th>
+              <th class="px-4 py-3 whitespace-nowrap">Acciones</th>
             </tr>
           </thead>
           <tbody id="rows" class="divide-y divide-slate-800 text-slate-200">
@@ -194,20 +195,54 @@
       </div>
     </div>
 
+    <!-- Modal de edición -->
+    <div id="editModal" class="fixed inset-0 z-[3000] hidden">
+      <div class="absolute inset-0 bg-black/60" data-close-edit></div>
+      <div class="relative mx-auto max-w-lg px-4 sm:px-6 lg:px-8 h-full flex items-center">
+        <form id="editForm" class="w-full rounded-2xl border border-slate-800 bg-slate-950 p-5 shadow-xl">
+          <div class="flex items-start justify-between gap-3">
+            <div>
+              <h3 class="text-lg font-semibold">Editar registro</h3>
+              <p class="text-xs text-slate-400">Solo se modificarán la misión y la presión.</p>
+            </div>
+            <button id="closeEditModal" class="rounded-xl border border-slate-800 bg-slate-900/30 px-3 py-2 text-sm hover:bg-slate-900/60 transition" type="button">Cerrar</button>
+          </div>
+
+          <div class="mt-4 space-y-4">
+            <div>
+              <label for="editMission" class="text-xs text-slate-400">Misión</label>
+              <input id="editMission" name="mission" type="text" maxlength="50" required class="mt-1 w-full rounded-xl border border-slate-800 bg-slate-900/40 px-3 py-2 text-sm text-slate-100 focus:outline-none focus:ring-2 focus:ring-slate-700">
+            </div>
+            <div>
+              <label for="editPres" class="text-xs text-slate-400">Presión</label>
+              <input id="editPres" name="pres" type="number" step="any" required class="mt-1 w-full rounded-xl border border-slate-800 bg-slate-900/40 px-3 py-2 text-sm text-slate-100 focus:outline-none focus:ring-2 focus:ring-slate-700">
+            </div>
+            <p id="editError" class="hidden text-sm text-red-400"></p>
+          </div>
+
+          <div class="mt-5 flex justify-end">
+            <button id="saveEdit" type="submit" class="rounded-xl border border-cyan-700 bg-cyan-900/40 px-4 py-2 text-sm text-cyan-100 hover:bg-cyan-900/70 transition disabled:opacity-50">Guardar cambios</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
   </div>
 </main>
 
 <script>
   // Datos de BD inyectados por Laravel
   const serverData = @json($historicalData ?? []);
+  const csrfToken = @json(csrf_token());
+  const updateUrlTemplate = @json(route('datosh.update', ['id' => '__ID__']));
 
   // Fallback demo si no hay datos en BD
   let rawData = serverData.length ? serverData : [
-    { ts: "2026-02-28T10:20:00", mission: "HYD-012", lat: 25.8694, rpm: 1820, fall_speed: 12.4, mission_time: 95, accel: 9.7, notes: "Vuelo estable" },
-    { ts: "2026-02-28T11:05:00", mission: "HYD-012", lat: 25.8696, rpm: 1905, fall_speed: 13.1, mission_time: 98, accel: 10.4, notes: "Ligera deriva" },
-    { ts: "2026-03-01T09:40:00", mission: "HYD-013", lat: 25.8702, rpm: 1760, fall_speed: 11.8, mission_time: 90, accel: 9.2, notes: "Recuperación rápida" },
-    { ts: "2026-03-01T12:10:00", mission: "HYD-014", lat: 25.8711, rpm: 2010, fall_speed: 14.0, mission_time: 103, accel: 11.1, notes: "Apogeo alto" },
-    { ts: "2026-03-01T12:45:00", mission: "HYD-014", lat: 25.8713, rpm: 1988, fall_speed: 13.6, mission_time: 101, accel: 10.8, notes: "Paracaídas OK" },
+    { ts: "2026-02-28T10:20:00", mission: "HYD-012", lat: 25.8694, lon: -97.5027, rpm: 1820, fall_speed: 12.4, mission_time: 95, accel: 9.7, notes: "Vuelo estable" },
+    { ts: "2026-02-28T11:05:00", mission: "HYD-012", lat: 25.8696, lon: -97.5025, rpm: 1905, fall_speed: 13.1, mission_time: 98, accel: 10.4, notes: "Ligera deriva" },
+    { ts: "2026-03-01T09:40:00", mission: "HYD-013", lat: 25.8702, lon: -97.5021, rpm: 1760, fall_speed: 11.8, mission_time: 90, accel: 9.2, notes: "Recuperación rápida" },
+    { ts: "2026-03-01T12:10:00", mission: "HYD-014", lat: 25.8711, lon: -97.5018, rpm: 2010, fall_speed: 14.0, mission_time: 103, accel: 11.1, notes: "Apogeo alto" },
+    { ts: "2026-03-01T12:45:00", mission: "HYD-014", lat: 25.8713, lon: -97.5015, rpm: 1988, fall_speed: 13.6, mission_time: 101, accel: 10.8, notes: "Paracaídas OK" },
   ];
 
   // Estado UI
@@ -219,6 +254,9 @@
   const $ = (id) => document.getElementById(id);
   const fmt = (n, d=2) => (Number.isFinite(n) ? n.toFixed(d) : "—");
   const fmtInt = (n) => (Number.isFinite(n) ? Math.round(n).toString() : "—");
+  const escapeHtml = (value) => String(value).replace(/[&<>'"]/g, character => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#039;', '"': '&quot;'
+  })[character]);
   const toLocal = (iso) => {
     const dt = new Date(iso);
     if (Number.isNaN(dt.getTime())) return iso;
@@ -291,12 +329,15 @@ function renderKPIs() {
     $("rows").innerHTML = slice.map((r, idx) => `
       <tr class="hover:bg-slate-900/30 transition cursor-pointer" data-ix="${start + idx}">
         <td class="px-4 py-3 whitespace-nowrap text-slate-300">${toLocal(r.ts)}</td>
-        <td class="px-4 py-3 whitespace-nowrap font-medium">${r.mission || "—"}</td>
+        <td class="px-4 py-3 whitespace-nowrap font-medium">${r.mission ? escapeHtml(r.mission) : "—"}</td>
         <td class="px-4 py-3 whitespace-nowrap">${Number.isFinite(r.pres) ? fmt(r.pres, 2) : "—"}</td>
         <td class="px-4 py-3 whitespace-nowrap">${Number.isFinite(r.lat) ? fmt(r.lat, 5) : "—"}</td>
         <td class="px-4 py-3 whitespace-nowrap">${Number.isFinite(r.lon) ? fmt(r.lon, 5) : "—"}</td>
         <td class="px-4 py-3 whitespace-nowrap">${Number.isFinite(r.rpm) ? fmtInt(r.rpm) : "—"}</td>
         <td class="px-4 py-3 whitespace-nowrap">${Number.isFinite(r.accel) ? fmt(r.accel, 2) : "—"}</td>
+        <td class="px-4 py-3 whitespace-nowrap">
+          ${r.id_db ? `<button type="button" class="edit-row rounded-lg border border-slate-700 bg-slate-900/40 px-3 py-1.5 text-xs hover:bg-slate-800 transition" data-id="${r.id_db}">Editar</button>` : "—"}
+        </td>
       </tr>
     `).join("");
 
@@ -311,6 +352,13 @@ function renderKPIs() {
       tr.addEventListener("click", () => {
         const ix = Number(tr.getAttribute("data-ix"));
         openModal(filtered[ix]);
+      });
+    });
+
+    [...$("rows").querySelectorAll(".edit-row")].forEach(button => {
+      button.addEventListener("click", (event) => {
+        event.stopPropagation();
+        openEditModal(Number(button.dataset.id));
       });
     });
   }
@@ -343,6 +391,66 @@ function renderKPIs() {
 
   function closeModal() {
     $("modal").classList.add("hidden");
+  }
+
+  let editingId = null;
+
+  function openEditModal(id) {
+    const row = rawData.find(r => r.id_db === id);
+    if (!row) return;
+
+    editingId = id;
+    $("editMission").value = row.mission ?? "";
+    $("editPres").value = Number.isFinite(row.pres) ? row.pres : "";
+    $("editError").classList.add("hidden");
+    $("editModal").classList.remove("hidden");
+  }
+
+  function closeEditModal() {
+    editingId = null;
+    $("editModal").classList.add("hidden");
+  }
+
+  async function saveEdit(event) {
+    event.preventDefault();
+    if (!editingId) return;
+
+    const saveButton = $("saveEdit");
+    const error = $("editError");
+    saveButton.disabled = true;
+    error.classList.add("hidden");
+
+    try {
+      const response = await fetch(updateUrlTemplate.replace('__ID__', editingId), {
+        method: "PATCH",
+        headers: {
+          "Accept": "application/json",
+          "Content-Type": "application/json",
+          "X-CSRF-TOKEN": csrfToken,
+        },
+        body: JSON.stringify({
+          mission: $("editMission").value.trim(),
+          pres: $("editPres").value,
+        }),
+      });
+
+      const result = await response.json();
+      if (!response.ok) {
+        const validationMessage = result.errors ? Object.values(result.errors).flat()[0] : null;
+        throw new Error(validationMessage || result.message || "No se pudo actualizar el registro.");
+      }
+
+      const row = rawData.find(r => r.id_db === editingId);
+      row.mission = result.data.mission;
+      row.pres = result.data.pres;
+      closeEditModal();
+      applyFilters();
+    } catch (exception) {
+      error.textContent = exception.message;
+      error.classList.remove("hidden");
+    } finally {
+      saveButton.disabled = false;
+    }
   }
 
   // CSV Export simple
@@ -381,6 +489,9 @@ function renderKPIs() {
   $("modal").addEventListener("click", (e) => {
     if (e.target === $("modal").querySelector(".absolute")) closeModal();
   });
+  $("closeEditModal").addEventListener("click", closeEditModal);
+  $("editModal").querySelector("[data-close-edit]").addEventListener("click", closeEditModal);
+  $("editForm").addEventListener("submit", saveEdit);
 
   // Render inicial
   renderAll();

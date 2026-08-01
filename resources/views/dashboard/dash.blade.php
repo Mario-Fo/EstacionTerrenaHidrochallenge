@@ -234,9 +234,10 @@
           <section class="col-start-1 col-end-2 row-start-3 rounded-2xl border border-slate-800 bg-slate-900/30 p-5">
             <h1 class="text-sm font-semibold mb-2">Comandos</h1>
             <div class="flex items-right justify-between mb-1">
-              <button class="px-3 py-1 rounded-md bg-emerald-500/20 border border-emerald-500/50 text-sm font-medium text-emerald-200 hover:bg-emerald-500/30 transition" onclick="fetch('/api/comandos/desplegar', { method: 'POST' })">Desplegar paracaidas</button>
-              <button class="ml-2 px-3 py-1 rounded-md bg-rose-500/20 border border-rose-500/50 text-sm font-medium text-rose-200 hover:bg-rose-500/30 transition" onclick="fetch('/api/comandos/resetear', { method: 'POST' })">Resetear</button>
+              <button id="deployButton" type="button" class="px-3 py-1 rounded-md bg-emerald-500/20 border border-emerald-500/50 text-sm font-medium text-emerald-200 hover:bg-emerald-500/30 transition disabled:opacity-50">Desplegar paracaidas</button>
+              <button id="resetDashboardButton" type="button" class="ml-2 px-3 py-1 rounded-md bg-rose-500/20 border border-rose-500/50 text-sm font-medium text-rose-200 hover:bg-rose-500/30 transition">Resetear</button>
             </div>
+            <p id="commandStatus" class="mt-2 min-h-4 text-xs text-slate-400" aria-live="polite"></p>
           </section>
         </div>  
       </main>
@@ -317,6 +318,7 @@
       let lastSampleAt = null;
       let lastAltitude = null;
       let lastTelemetryRowId = null;
+      let previousAccelerationMagnitude = null;
 
       function paintTelemetryAside() {
         setText("pVal", telemetry.pressure_pa === null ? "--" : fmt2(telemetry.pressure_pa));
@@ -450,7 +452,15 @@
       }
 
       function updateLeafletMarker(lat, lon) {
-        if (!map || !marker) return;
+        if (!map) return;
+        if (!marker) {
+          marker = L.marker([lat, lon]).addTo(map);
+          map.setView([lat, lon], map.getZoom(), { animate: false });
+          lastLat = lat;
+          lastLon = lon;
+          updateCoordsLabel(lat, lon);
+          return;
+        }
         if (lastLat === lat && lastLon === lon) return;
         marker.setLatLng([lat, lon]);
         if (!map.getBounds().contains([lat, lon])) {
@@ -562,11 +572,16 @@
         telemetry.accel_z_g = Number(sample.accZ);
         telemetry.rpm = Number(sample.RPM);
 
-        telemetry.accel_ms2 = Math.sqrt(
+        const currentAccelerationMagnitude = Math.sqrt(
           Math.pow(telemetry.accel_x_g, 2) +
           Math.pow(telemetry.accel_y_g, 2) +
           Math.pow(telemetry.accel_z_g, 2)
         );
+
+        telemetry.accel_ms2 = previousAccelerationMagnitude === null
+          ? currentAccelerationMagnitude
+          : (currentAccelerationMagnitude + previousAccelerationMagnitude) / 2;
+        previousAccelerationMagnitude = currentAccelerationMagnitude;
 
         if (lastSampleAt !== null && lastAltitude !== null) {
           const dt = (now - lastSampleAt) / 1000;
@@ -611,6 +626,100 @@
         }
       }
 
+      function clearChart(chart) {
+        if (!chart) return;
+        chart.data.datasets[0].data = Array(chartTimeline.length).fill(null);
+        chart.update("none");
+      }
+
+      function resetStatusCard(card, badge) {
+        card?.classList.remove(
+          "border-emerald-500/60", "border-amber-500/60", "border-rose-500/60"
+        );
+        badge?.classList.remove(
+          "border-emerald-500/50", "bg-emerald-500/10", "text-emerald-200",
+          "border-amber-500/50", "bg-amber-500/10", "text-amber-200",
+          "border-rose-500/50", "bg-rose-500/10", "text-rose-200"
+        );
+        badge?.classList.add("border-slate-700", "bg-slate-950/60", "text-slate-300");
+        if (badge) badge.textContent = "—";
+      }
+
+      function resetDashboard() {
+        Object.assign(telemetry, {
+          pressure_pa: null,
+          temperature_c: null,
+          humidity_rh: null,
+          lat_deg: null,
+          lon_deg: null,
+          alt_m: null,
+          accel_ms2: null,
+          accel_x_g: null,
+          accel_y_g: null,
+          accel_z_g: null,
+          rpm: null,
+          apogee_m: 0,
+          fall_ms: 0,
+          air_time_s: 0
+        });
+
+        maxApogeeSeen = 0;
+        missionStartAt = null;
+        lastSampleAt = null;
+        lastAltitude = null;
+        previousAccelerationMagnitude = null;
+
+        paintTelemetryAside();
+        setText("apogeeMaxVal", "--");
+        setText("apogeeVal", "--");
+        setText("fallVal", "--");
+        setText("aireTimeVal", "--");
+        setText("coordsLabel", "--");
+        updateMissionFromAirTime(0);
+        resetStatusCard(apogeeCard, apogeeBadge);
+        resetStatusCard(fallCard, fallBadge);
+        resetStatusCard(aireTimeCard, aireTimeBadge);
+
+        clearChart(chartAlturaTiempo);
+        clearChart(chartAceleracionTiempo);
+        clearChart(chartVelocidadTiempo);
+
+        if (map && marker) {
+          map.removeLayer(marker);
+          marker = null;
+        }
+        lastLat = null;
+        lastLon = null;
+
+        setText("commandStatus", "Dashboard reiniciado. La base de datos no fue modificada.");
+      }
+
+      async function deployParachute() {
+        const button = document.getElementById("deployButton");
+        button.disabled = true;
+        setText("commandStatus", "Enviando comando e...");
+
+        try {
+          const response = await fetch("/api/comandos/desplegar", {
+            method: "POST",
+            headers: { "Accept": "application/json" },
+          });
+          const result = await response.json();
+          if (!response.ok || !result?.ok) {
+            throw new Error(result?.message || `HTTP ${response.status}`);
+          }
+          setText("commandStatus", "Comando e encolado para la ESP32.");
+        } catch (error) {
+          console.error("No se pudo enviar el comando de despliegue:", error);
+          setText("commandStatus", "No se pudo enviar el comando de despliegue.");
+        } finally {
+          button.disabled = false;
+        }
+      }
+
+      document.getElementById("deployButton")?.addEventListener("click", deployParachute);
+      document.getElementById("resetDashboardButton")?.addEventListener("click", resetDashboard);
+
       paintTelemetryAside();
       paintRequirements();
       fetchLatestTelemetry();
@@ -631,4 +740,3 @@
 </body>
 </html>
 @endsection
-
