@@ -1,0 +1,24 @@
+{
+	"folders": [
+		{
+			"path": "../../.."
+		},
+		{
+			"name": "Hidronautas",
+			"path": "../.."
+		},
+		{
+			"name": "EstacionTerrena",
+			"path": "../../EstacionTerrena"
+		},
+		{
+			"name": "Cohete",
+			"path": ".."
+		},
+		{
+			"name": "Zenda-Apollo",
+			"path": "../../../Zenda-Apollo"
+		}
+	],
+	"settings": {}
+}
