@@ -26,7 +26,7 @@
           class="inline-flex items-center justify-center rounded-xl border border-slate-800 bg-slate-900/40 px-4 py-2 text-sm text-slate-200 hover:bg-slate-900/70 transition"
           type="button"
         >
-          Exportar (CSV)
+          Exportar CSV
         </button>
       </div>
     </div>

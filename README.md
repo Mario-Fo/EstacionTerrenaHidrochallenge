@@ -1,59 +1,213 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# Estación Terrena Hidrochallenge
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+Aplicación de estación terrena para recibir, almacenar y visualizar la telemetría del cohete Bravo II. El proyecto utiliza Laravel para la interfaz y los servicios web, PostgreSQL para almacenar los datos, y una API de Python para ejecutar la simulación física.
 
-## About Laravel
+## Requisitos
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+Antes de iniciar, instala:
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+- PHP 8.3 o superior, con las extensiones `pdo_pgsql`, `pgsql`, `mbstring`, `openssl`, `fileinfo` y `curl`.
+- [Composer](https://getcomposer.org/) para las dependencias de Laravel.
+- [Node.js](https://nodejs.org/) y npm para los recursos del frontend.
+- Python 3.10 o superior y `pip` para la API de simulación.
+- PostgreSQL.
+- Git, si el proyecto se obtendrá desde el repositorio.
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+Para comprobar las instalaciones:
 
-## Learning Laravel
+```bash
+php --version
+composer --version
+node --version
+npm --version
+python --version
+psql --version
+```
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework. You can also check out [Laravel Learn](https://laravel.com/learn), where you will be guided through building a modern Laravel application.
+## Instalación del proyecto
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+Desde la raíz del proyecto, instala las dependencias de PHP y JavaScript:
 
-## Laravel Sponsors
+```bash
+composer install
+npm install
+```
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+Crea el archivo de configuración local. En Windows PowerShell:
 
-### Premium Partners
+```powershell
+Copy-Item .env.example .env
+```
 
-- **[Vehikl](https://vehikl.com)**
-- **[Tighten Co.](https://tighten.co)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Redberry](https://redberry.international/laravel-development)**
-- **[Active Logic](https://activelogic.com)**
+En Linux o macOS:
 
-## Contributing
+```bash
+cp .env.example .env
+```
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+Genera la clave de Laravel:
 
-## Code of Conduct
+```bash
+php artisan key:generate
+```
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+## Configuración de PostgreSQL
 
-## Security Vulnerabilities
+Crea una base de datos para la estación. Por ejemplo, desde PostgreSQL:
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+```sql
+CREATE DATABASE estacion_terrena;
+```
 
-## License
+Después, edita `.env` con los datos reales de tu servidor:
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+```env
+DB_CONNECTION=pgsql
+DB_HOST=127.0.0.1
+DB_PORT=5432
+DB_DATABASE=estacion_terrena
+DB_USERNAME=postgres
+DB_PASSWORD=tu_contraseña
+```
+
+Con PostgreSQL activo, crea las tablas:
+
+```bash
+php artisan migrate
+```
+
+## Instalación de la API de Python
+
+La página de simulación necesita una API independiente. Entra a su directorio, crea un entorno virtual e instala las librerías:
+
+```bash
+cd python_api
+python -m venv .venv
+```
+
+Activa el entorno virtual en Windows PowerShell:
+
+```powershell
+.\.venv\Scripts\Activate.ps1
+```
+
+En Linux o macOS:
+
+```bash
+source .venv/bin/activate
+```
+
+Instala las dependencias:
+
+```bash
+python -m pip install numpy scipy fastapi uvicorn
+```
+
+Luego regresa a la raíz del proyecto:
+
+```bash
+cd ..
+```
+
+Comprueba que `.env` apunte al servicio de simulación:
+
+```env
+PY_SIM_API_URL=http://127.0.0.1:8002/simular
+```
+
+## Cómo iniciar la estación
+
+La estación necesita tres procesos ejecutándose al mismo tiempo. Abre tres terminales en la raíz del proyecto.
+
+### 1. API de simulación
+
+```bash
+cd python_api
+python -m uvicorn api:app --host 127.0.0.1 --port 8002 --reload
+```
+
+La API estará disponible en `http://127.0.0.1:8002`. Puedes verificarla en `http://127.0.0.1:8002/health`.
+
+### 2. Servidor Laravel
+
+```bash
+php artisan serve --host=0.0.0.0 --port=8001
+```
+
+La interfaz estará disponible en:
+
+- En la misma computadora: `http://127.0.0.1:8001`
+- Desde otro dispositivo de la red: `http://IP_DE_LA_COMPUTADORA:8001`
+
+### 3. Recursos del frontend
+
+Para desarrollo:
+
+```bash
+npm run dev
+```
+
+Para generar los archivos de producción:
+
+```bash
+npm run build
+```
+
+## Configuración del receptor de telemetría
+
+Antes de cargar `Arduino/Receptor_telemetria.ino` en el ESP32, cambia estos valores:
+
+```cpp
+const char* ssid = "NOMBRE_DEL_WIFI";
+const char* password = "CONTRASEÑA_DEL_WIFI";
+const char* serverUrl = "http://IP_DE_LA_COMPUTADORA:8001/api/lecturas-multi";
+```
+
+La computadora y el ESP32 deben estar conectados a la misma red. No uses `127.0.0.1` en el ESP32, porque esa dirección apuntaría al propio microcontrolador. Si el firewall lo solicita, permite las conexiones entrantes al puerto `8001`.
+
+## Librerías de Arduino
+
+El transmisor `Arduino/Telemetria_Hidrochallenge.ino` requiere instalar desde el gestor de librerías del Arduino IDE:
+
+- Adafruit BME280 Library
+- Adafruit Unified Sensor
+- TinyGPSPlus
+- Servo
+
+Las librerías `Wire`, `SPI` y `SoftwareSerial` normalmente se incluyen con el paquete de la placa Arduino. El receptor ESP32 usa `WiFi` y `HTTPClient`, incluidas con el paquete de placas ESP32.
+
+## Resumen de comandos
+
+Primera instalación:
+
+```bash
+composer install
+npm install
+php artisan key:generate
+php artisan migrate
+cd python_api
+python -m venv .venv
+python -m pip install numpy scipy fastapi uvicorn
+```
+
+Cada vez que se quiera ejecutar la estación:
+
+```bash
+# Terminal 1, desde python_api
+python -m uvicorn api:app --host 127.0.0.1 --port 8002 --reload
+
+# Terminal 2, desde la raíz
+php artisan serve --host=0.0.0.0 --port=8001
+
+# Terminal 3, desde la raíz
+npm run dev
+```
+
+## Solución de problemas
+
+- Si Laravel no se conecta a PostgreSQL, revisa las variables `DB_*` de `.env` y confirma que PostgreSQL esté activo.
+- Si modificaste `.env` y Laravel conserva valores anteriores, ejecuta `php artisan config:clear`.
+- Si faltan tablas, ejecuta `php artisan migrate`.
+- Si la simulación falla, comprueba que la API responda en `http://127.0.0.1:8002/health`.
+- Si no llega telemetría, revisa el Wi‑Fi, la IP y el puerto configurados en el receptor, y confirma que Laravel se inició con `--host=0.0.0.0`.
+- Si Vite no carga estilos o scripts, mantén `npm run dev` activo o ejecuta `npm run build`.
