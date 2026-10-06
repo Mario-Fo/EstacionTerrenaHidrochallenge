@@ -24,17 +24,30 @@ void TaskSensors(void *pvParameters) {
 }
 
 void TaskLoRa(void *pvParameters) {
+    // Init fuera del WDT: con el modulo ausente puede tardar varios segundos
+    radioOK = radioInit();
     esp_task_wdt_add(NULL);
-    radioInit();
 
     uint32_t lastTx = 0;
+    uint32_t lastRetry = 0;
     while (1) {
         esp_task_wdt_reset();
 
+        if (!radioOK && millis() - lastRetry >= 10000) {
+            lastRetry = millis();
+            esp_task_wdt_delete(NULL);
+            radioOK = radioInit();
+            esp_task_wdt_add(NULL);
+        }
+
         if (millis() - lastTx >= 1000) {
             lastTx = millis();
-            radioTransmit();
-            radioProcessCommands();
+            if (radioOK) {
+                radioTransmit();
+            } else {
+                Serial.print("TELEMETRIA (sin LoRa): ");
+                Serial.println(telemetryJson());
+            }
         }
 
         vTaskDelay(pdMS_TO_TICKS(10));
@@ -44,18 +57,17 @@ void TaskLoRa(void *pvParameters) {
 void setup() {
     Serial.begin(115200);
 
-    // Margen amplio para tolerar bloqueos puntuales de LoRa/I2C
-    esp_task_wdt_config_t wdt_config = {
-        .timeout_ms = 5000,
-        .idle_core_mask = (1 << portNUM_PROCESSORS) - 1,
-        .trigger_panic = true
-    };
-    esp_task_wdt_init(&wdt_config);
+    // Margen amplio para tolerar bloqueos puntuales de LoRa/I2C (timeout en segundos)
+    esp_task_wdt_init(5, true);
 
     dataMutex = xSemaphoreCreateMutex();
 
-    ledcAttach(SERVO_PIN, 50, 10);
-    ledcWrite(SERVO_PIN, 51); // 0 grados
+    pinMode(SERVO_PWR_PIN, OUTPUT);
+    digitalWrite(SERVO_PWR_PIN, LOW); // servo sin alimentar hasta el despliegue
+
+    ledcSetup(SERVO_CH, 50, 10);
+    ledcAttachPin(SERVO_PIN, SERVO_CH);
+    ledcWrite(SERVO_CH, 51); // 0 grados
 
     xTaskCreatePinnedToCore(TaskSensors, "Sensors", 4096, NULL, 2, NULL, 0);
     xTaskCreatePinnedToCore(TaskLoRa, "LoRaTx", 8192, NULL, 1, NULL, 1);

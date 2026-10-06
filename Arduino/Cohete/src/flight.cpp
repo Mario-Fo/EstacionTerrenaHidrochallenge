@@ -14,7 +14,8 @@ void flightUpdate() {
             if (tData.velZ <= 0.0 && tData.alt > 10.0) {
                 flightState = APOGEO;
                 tData.paracaidas_eyectado = true;
-                ledcWrite(SERVO_PIN, 102); // aprox 180 grados
+                digitalWrite(SERVO_PWR_PIN, HIGH); // habilita alimentacion del servo (MOSFET)
+                ledcWrite(SERVO_CH, 102); // aprox 180 grados
                 flightState = DESCENSO;
             }
             break;

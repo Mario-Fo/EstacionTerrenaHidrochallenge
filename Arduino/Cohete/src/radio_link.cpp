@@ -6,52 +6,59 @@
 #include <ArduinoJson.h>
 
 LLCC68 radio = new Module(LORA_CS, LORA_DIO1, LORA_RST, LORA_BUSY);
+bool radioOK = false;
 
-void radioInit() {
+bool radioInit() {
+    pinMode(LED_PIN, OUTPUT);
+    digitalWrite(LED_PIN, LOW);
     SPI.begin(LORA_SCK, LORA_MISO, LORA_MOSI, LORA_CS);
     int state = radio.begin(LORA_FREQ, LORA_BW, LORA_SF, LORA_CR, LORA_SYNCWORD, LORA_PWR, LORA_PREAMBLE);
     if (state != RADIOLIB_ERR_NONE) {
         Serial.print("LoRa fallo, codigo: ");
         Serial.println(state);
-    } else {
-        Serial.println("LoRa inicializado.");
+        radioOK = false;
+        return false;
     }
+    Serial.println("LoRa inicializado.");
+    radioOK = true;
+    return true;
+}
+
+String telemetryJson() {
+    JsonDocument doc;
+    JsonArray lecturas = doc["lecturas"].to<JsonArray>();
+    JsonObject item = lecturas.add<JsonObject>();
+    item["id"] = "HYDRONAUTAS";
+
+    xSemaphoreTake(dataMutex, portMAX_DELAY);
+    item["pres"] = serialized(String(tData.pres, 2));
+    item["temp"] = serialized(String(tData.temp, 2));
+    item["hum"] = serialized(String(tData.hum, 2));
+    item["lat"] = serialized(String(tData.lat, 5));
+    item["long"] = serialized(String(tData.lng, 5));
+    item["alt"] = serialized(String(tData.alt, 2));
+    item["accX"] = serialized(String(tData.accX, 2));
+    item["accY"] = serialized(String(tData.accY, 2));
+    item["accZ"] = serialized(String(tData.accZ, 2));
+    xSemaphoreGive(dataMutex);
+
+    String out;
+    serializeJson(doc, out);
+    return out;
 }
 
 void radioTransmit() {
-    StaticJsonDocument<512> doc;
-    doc["ok"] = true;
-    JsonObject data = doc.createNestedObject("data");
-    data["id"] = "HYDRONAUTAS";
+    if (!radioOK) return;
 
-    xSemaphoreTake(dataMutex, portMAX_DELAY);
-    data["pres"] = tData.pres;
-    data["temp"] = tData.temp;
-    data["hum"] = tData.hum;
-    data["lat"] = tData.lat;
-    data["long"] = tData.lng;
-    data["alt"] = tData.alt;
-    data["velZ"] = tData.velZ;
-    data["accX"] = tData.accX;
-    data["accY"] = tData.accY;
-    data["accZ"] = tData.accZ;
-    data["RPM"] = tData.rpm;
-    data["deployed"] = tData.paracaidas_eyectado;
-    xSemaphoreGive(dataMutex);
+    String jsonStr = telemetryJson();
 
-    String jsonStr;
-    serializeJson(doc, jsonStr);
-    radio.transmit(jsonStr);
-}
+    Serial.print("TX: ");
+    Serial.println(jsonStr);
+    int state = radio.transmit(jsonStr);
+    digitalWrite(LED_PIN, !digitalRead(LED_PIN));
 
-void radioProcessCommands() {
-    String incoming;
-    if (radio.receive(incoming, 100) != RADIOLIB_ERR_NONE) return;
-
-    if (incoming == "CMD_EJECT") {
-        xSemaphoreTake(dataMutex, portMAX_DELAY);
-        tData.paracaidas_eyectado = true;
-        ledcWrite(SERVO_PIN, 102);
-        xSemaphoreGive(dataMutex);
+    if (state != RADIOLIB_ERR_NONE) {
+        Serial.print("TX fallo, codigo: ");
+        Serial.println(state);
     }
 }

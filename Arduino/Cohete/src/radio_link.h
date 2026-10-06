@@ -1,5 +1,6 @@
 #pragma once
 
-void radioInit();
+extern bool radioOK;
+bool radioInit();
 void radioTransmit();
-void radioProcessCommands();
+String telemetryJson();
