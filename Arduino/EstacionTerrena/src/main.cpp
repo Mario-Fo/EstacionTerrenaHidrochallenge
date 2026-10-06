@@ -4,6 +4,7 @@
 #include "config.h"
 #include "radio_link.h"
 #include "http_telemetry.h"
+#include "battery.h"
 
 String pendingJson = "";
 bool hasPendingData = false;
@@ -11,10 +12,12 @@ portMUX_TYPE dataMux = portMUX_INITIALIZER_UNLOCKED;
 
 void TaskRadio(void *pvParameters) {
     radioInit();
+    radioStartListen();
+    uint32_t lastBatt = 0;
 
     while (1) {
         String incoming;
-        if (radioReceive(incoming, 100)) {
+        if (radioCheckRx(incoming)) {
             Serial.println("Paquete recibido: " + incoming);
             portENTER_CRITICAL(&dataMux);
             pendingJson = incoming;
@@ -22,12 +25,9 @@ void TaskRadio(void *pvParameters) {
             portEXIT_CRITICAL(&dataMux);
         }
 
-        if (Serial.available() > 0) {
-            char c = Serial.read();
-            if (c == 'E' || c == 'e') {
-                Serial.println("Enviando comando EJECT...");
-                radioTransmitCommand("CMD_EJECT");
-            }
+        if (millis() - lastBatt >= 5000) {
+            lastBatt = millis();
+            Serial.printf("Bateria: %.2fV (%.0f%%)\n", batteryVoltage(), batteryPercent());
         }
 
         vTaskDelay(pdMS_TO_TICKS(10));
@@ -47,6 +47,7 @@ void TaskHTTP(void *pvParameters) {
 
             bool sent = false;
             if (WiFi.status() == WL_CONNECTED) {
+                Serial.println("Enviando por WiFi: " + toSend);
                 sent = httpPost(toSend);
             } else {
                 connectWiFi();
@@ -70,6 +71,7 @@ void TaskHTTP(void *pvParameters) {
 void setup() {
     Serial.begin(115200);
     WiFi.mode(WIFI_STA);
+    batteryInit();
 
     xTaskCreatePinnedToCore(TaskRadio, "LoRaRx", 8192, NULL, 2, NULL, 1);
     xTaskCreatePinnedToCore(TaskHTTP, "HTTP", 8192, NULL, 1, NULL, 0);

@@ -29,6 +29,8 @@ bool httpPost(const String &payload) {
     int code = http.POST(payload);
     if (code > 0) {
         Serial.printf("Server OK: %d\n", code);
+        String resp = http.getString();
+        if (resp.length()) Serial.println("Resp: " + resp);
     } else {
         Serial.printf("Server Err: %s\n", http.errorToString(code).c_str());
     }
