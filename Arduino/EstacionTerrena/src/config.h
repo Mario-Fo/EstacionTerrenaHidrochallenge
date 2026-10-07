@@ -1,16 +1,16 @@
 #pragma once
 
-// Modulo LoRa: Ebyte E22-900M22S 
-#define LORA_SCK  6
-#define LORA_MISO 8
-#define LORA_MOSI 9
-#define LORA_CS   10
-#define LORA_RST  11
-#define LORA_DIO1 12
-#define LORA_BUSY 13
+// Modulo LoRa: Ebyte E22-900M22S (pines reales detectados con el escaner)
+#define LORA_SCK  2
+#define LORA_MISO 4
+#define LORA_MOSI 3
+#define LORA_CS   1
+#define LORA_RST  5
+#define LORA_DIO1 7
+#define LORA_BUSY 6
 
 
-#define BATT_PIN      7
+#define BATT_PIN      8
 #define BATT_DIVISOR  2.0F
 #define BATT_MIN_V    3.3F
 #define BATT_MAX_V    4.2F
