@@ -23,7 +23,7 @@
 
 #define LORA_FREQ     915.0
 #define LORA_BW       125.0
-#define LORA_SF       9
+#define LORA_SF       7
 #define LORA_CR       7
 #define LORA_SYNCWORD 0x12
 #define LORA_PWR      22

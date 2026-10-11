@@ -24,6 +24,17 @@ bool radioInit() {
     return true;
 }
 
+const char *stateName(FlightState s) {
+    switch (s) {
+        case EN_ESPERA:  return "ESPERA";
+        case ASCENSO:    return "ASCENSO";
+        case DESACOPLE:  return "DESACOPLE";
+        case DESCENSO:   return "DESCENSO";
+        case ATERRIZADO: return "ATERRIZADO";
+    }
+    return "?";
+}
+
 String telemetryJson() {
     JsonDocument doc;
     JsonArray lecturas = doc["lecturas"].to<JsonArray>();
@@ -37,9 +48,13 @@ String telemetryJson() {
     item["lat"] = serialized(String(tData.lat, 5));
     item["long"] = serialized(String(tData.lng, 5));
     item["alt"] = serialized(String(tData.alt, 2));
+    item["velZ"] = serialized(String(tData.velZ, 2));
     item["accX"] = serialized(String(tData.accX, 2));
     item["accY"] = serialized(String(tData.accY, 2));
     item["accZ"] = serialized(String(tData.accZ, 2));
+    item["RPM"] = tData.rpm;
+    item["deployed"] = tData.paracaidas_eyectado;
+    item["state"] = stateName(flightState);
     xSemaphoreGive(dataMutex);
 
     String out;

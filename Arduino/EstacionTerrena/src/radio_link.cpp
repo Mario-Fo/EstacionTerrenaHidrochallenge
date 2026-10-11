@@ -3,7 +3,7 @@
 #include <SPI.h>
 #include <RadioLib.h>
 
-SX1262 radio = new Module(LORA_CS, LORA_DIO1, LORA_RST, LORA_BUSY);
+LLCC68 radio = new Module(LORA_CS, LORA_DIO1, LORA_RST, LORA_BUSY);
 
 void radioInit() {
     SPI.begin(LORA_SCK, LORA_MISO, LORA_MOSI, LORA_CS);

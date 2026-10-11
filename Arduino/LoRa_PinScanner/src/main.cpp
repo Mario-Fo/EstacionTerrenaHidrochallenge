@@ -1,21 +1,22 @@
-// Escaner de pines del modulo LoRa (SX1262 / E22-900M22S / LLCC68)
+// Escaner de pines del modulo LoRa (SX1262 / LLCC68 / E22 / E220)
 //  Fase 1: detecta SCK/MOSI/MISO/CS leyendo el registro de version (0x0320)
 //          buscando "SX12" o "LLCC". No necesita RST ni BUSY.
-//  Fase 2: con los SPI hallados, prueba RST/BUSY/DIO1 entre los pines restantes
-//          usando RadioLib begin().
+//  Fase 2: detecta RST (el pin que al ponerlo en bajo hace fallar la lectura).
+//  Fase 3: con RST hallado, resetea y ve que pin pulsa en alto (BUSY); el otro
+//          conectado es DIO1.
+// No usa RadioLib: sirve igual para SX1262 (TCXO) y LLCC68 (cristal).
 
 #include <Arduino.h>
 #include <SPI.h>
 #include <RadioLib.h>
 
-const int CAND[] = {1, 2, 3, 4, 5, 6, 7};
+const int CAND[] = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13};
 const int NC = sizeof(CAND) / sizeof(CAND[0]);
 
 #define CMD_READ_REGISTER   0x1D
 #define REG_VERSION_STRING  0x0320
 
-int g_sck = -1, g_mosi = -1, g_miso = -1, g_cs = -1;
-int g_rst = -1;
+int g_sck = -1, g_mosi = -1, g_miso = -1, g_cs = -1, g_rst = -1;
 
 bool hasPat(const uint8_t *b, const char *pat, int plen) {
     for (int i = 0; i + plen <= 16; i++) {
@@ -25,6 +26,8 @@ bool hasPat(const uint8_t *b, const char *pat, int plen) {
     }
     return false;
 }
+
+bool isSPI(int p) { return p == g_sck || p == g_mosi || p == g_miso || p == g_cs; }
 
 bool rawRead(int sck, int mosi, int miso, int cs, uint8_t *b) {
     SPI.end();
@@ -44,8 +47,14 @@ bool rawRead(int sck, int mosi, int miso, int cs, uint8_t *b) {
     return hasPat(b, "SX12", 4) || hasPat(b, "LLCC", 4);
 }
 
-void phase1() {
-    Serial.println("--- Fase 1: SCK/MOSI/MISO/CS ---");
+void setup() {
+    Serial.begin(115200);
+    delay(1500);
+    Serial.println();
+    Serial.println("=== LoRa pin scanner v4 ===");
+
+    // ---- Fase 1: SPI ----
+    Serial.println("-- Fase 1: SCK/MOSI/MISO/CS --");
     for (int a = 0; a < NC; a++)
     for (int b = 0; b < NC; b++) {
         if (b == a) continue;
@@ -56,83 +65,100 @@ void phase1() {
                 uint8_t buf[16];
                 if (rawRead(CAND[a], CAND[b], CAND[c], CAND[d], buf)) {
                     g_sck = CAND[a]; g_mosi = CAND[b]; g_miso = CAND[c]; g_cs = CAND[d];
-                    Serial.printf("MATCH SCK=%d MOSI=%d MISO=%d CS=%d :", g_sck, g_mosi, g_miso, g_cs);
+                    Serial.printf("MATCH CS=%d SCK=%d MOSI=%d MISO=%d :", g_cs, g_sck, g_mosi, g_miso);
                     for (int i = 0; i < 16; i++) Serial.printf(" %02X", buf[i]);
                     Serial.print("  \"");
                     for (int i = 0; i < 16; i++) { char ch = (char)buf[i]; Serial.print((ch >= 32 && ch < 127) ? ch : '.'); }
                     Serial.println("\"");
+                } else {
+                    bool all00 = true, allFF = true;
+                    for (int i = 0; i < 16; i++) { if (buf[i] != 0x00) all00 = false; if (buf[i] != 0xFF) allFF = false; }
+                    if (!all00 && !allFF) {
+                        Serial.printf("RAW CS=%d SCK=%d MOSI=%d MISO=%d :", CAND[d], CAND[a], CAND[b], CAND[c]);
+                        for (int i = 0; i < 16; i++) Serial.printf(" %02X", buf[i]);
+                        Serial.println();
+                    }
                 }
             }
         }
     }
-    if (g_cs < 0) Serial.println("Fase 1: sin match.");
-}
+    if (g_cs < 0) { Serial.println("Sin match SPI."); return; }
 
-void phase2() {
-    if (g_cs < 0) { Serial.println("Fase 2: omitida."); return; }
-    Serial.println("--- Fase 2: RST/BUSY/DIO1 ---");
-    int rem[8], n = 0;
+    // ---- Fase 2: RST ----
+    Serial.println("-- Fase 2: RST --");
+    for (int i = 0; i < NC; i++) {
+        int c = CAND[i];
+        if (isSPI(c)) continue;
+        pinMode(c, OUTPUT_OPEN_DRAIN);   // solo tira a bajo, no pelea con salidas
+        digitalWrite(c, LOW);
+        delay(5);
+        uint8_t buf[16];
+        bool ok = rawRead(g_sck, g_mosi, g_miso, g_cs, buf);
+        digitalWrite(c, HIGH);
+        pinMode(c, INPUT);
+        delay(5);
+        if (!ok) { g_rst = c; Serial.printf("RST = %d (lectura fallo con reset)\n", c); break; }
+    }
+    if (g_rst < 0) { Serial.println("No encontre RST."); return; }
+
+    // ---- Fase 3: BUSY vs DIO1 ----
+    Serial.println("-- Fase 3: BUSY vs DIO1 --");
+    int rem[16], n = 0;
     for (int i = 0; i < NC; i++) {
         int p = CAND[i];
-        if (p != g_sck && p != g_mosi && p != g_miso && p != g_cs) rem[n++] = p;
+        if (p == g_sck || p == g_mosi || p == g_miso || p == g_cs || p == g_rst) continue;
+        rem[n++] = p;
     }
-    for (int ri = 0; ri < n; ri++)
-    for (int bi = 0; bi < n; bi++) {
-        if (bi == ri) continue;
-        for (int di = 0; di < n; di++) {
-            if (di == ri || di == bi) continue;
-            int rst = rem[ri], busy = rem[bi], dio1 = rem[di];
-            SPI.end();
-            SPI.begin(g_sck, g_miso, g_mosi, g_cs);
-            Module mod(g_cs, dio1, rst, busy);
-            SX1262 r(&mod);
-            int st = r.begin(915.0, 125.0, 9, 7, 0x12, 22, 8, 2.2);
-            Serial.printf("  RST=%d BUSY=%d DIO1=%d -> %d\n", rst, busy, dio1, st);
-            if (st == RADIOLIB_ERR_NONE) {
-                g_rst = rst;
-                Serial.printf(">>> OK: CS=%d SCK=%d MOSI=%d MISO=%d RST=%d BUSY=%d DIO1=%d\n",
-                              g_cs, g_sck, g_mosi, g_miso, rst, busy, dio1);
-                return;  // seguimos con la Fase 3
-            }
-        }
-    }
-}
-
-void phase3() {
-    if (g_rst < 0) { Serial.println("Fase 3: omitida."); return; }
-    Serial.println("--- Fase 3: BUSY vs DIO1 ---");
-    int rem[8], n = 0;
-    for (int i = 0; i < NC; i++) {
-        int p = CAND[i];
-        if (p != g_sck && p != g_mosi && p != g_miso && p != g_cs && p != g_rst) rem[n++] = p;
-    }
-    if (n != 2) { Serial.printf("Fase 3: quedan %d pines (se esperaban 2).\n", n); return; }
-    int p1 = rem[0], p2 = rem[1];
+    for (int i = 0; i < n; i++) pinMode(rem[i], INPUT_PULLDOWN);
+    bool hi[16];
+    for (int i = 0; i < n; i++) hi[i] = false;
     pinMode(g_rst, OUTPUT);
-    pinMode(p1, INPUT_PULLDOWN);
-    pinMode(p2, INPUT_PULLDOWN);
     digitalWrite(g_rst, LOW);
-    delay(10);
-    digitalWrite(g_rst, HIGH);
-    bool s1 = false, s2 = false;
     uint32_t t0 = millis();
-    while (millis() - t0 < 200) {
-        if (digitalRead(p1)) s1 = true;
-        if (digitalRead(p2)) s2 = true;
-    }
-    Serial.printf("Tras reset (RST=%d): GPIO%d pulso=%d, GPIO%d pulso=%d\n", g_rst, p1, s1, p2, s2);
-    Serial.printf(">>> BUSY = %d, DIO1 = %d (el que pulso alto es BUSY)\n",
-                  s1 ? p1 : (s2 ? p2 : -1), s1 ? p2 : (s2 ? p1 : -1));
-}
-
-void setup() {
-    Serial.begin(115200);
-    delay(1500);
+    while (millis() - t0 < 30) { for (int i = 0; i < n; i++) if (digitalRead(rem[i])) hi[i] = true; }
+    digitalWrite(g_rst, HIGH);
+    t0 = millis();
+    while (millis() - t0 < 500) { for (int i = 0; i < n; i++) if (digitalRead(rem[i])) hi[i] = true; }
+    Serial.print("Niveles altos (BUSY) en: ");
+    int busy = -1;
+    for (int i = 0; i < n; i++) if (hi[i]) { Serial.printf("%d ", rem[i]); if (busy < 0) busy = rem[i]; }
     Serial.println();
-    Serial.println("=== LoRa pin scanner v3 ===");
-    phase1();
-    phase2();
-    phase3();
+    Serial.print("Detalle: ");
+    for (int i = 0; i < n; i++) Serial.printf("GPIO%d=%d ", rem[i], hi[i] ? 1 : 0);
+    Serial.println();
+    Serial.printf(">>> CS=%d SCK=%d MOSI=%d MISO=%d RST=%d BUSY=%d\n",
+                  g_cs, g_sck, g_mosi, g_miso, g_rst, busy);
+    Serial.println("=== Fin ===");
+
+    // ---- Fase 4: distinguir BUSY/DIO1 (sin RadioLib) ----
+    Serial.println("-- Fase 4: BUSY vs DIO1 --");
+    // 4a) verificar que RST resetea
+    pinMode(g_rst, OUTPUT);
+    digitalWrite(g_rst, LOW);
+    delay(5);
+    uint8_t bb[16];
+    bool inReset = rawRead(g_sck, g_mosi, g_miso, g_cs, bb);
+    digitalWrite(g_rst, HIGH);
+    delay(5);
+    bool outReset = rawRead(g_sck, g_mosi, g_miso, g_cs, bb);
+    Serial.printf("reset test: en_reset_ok=%d fuera_ok=%d\n", inReset, outReset);
+    // 4b) comando Calibrate (0x89 0x7F) -> BUSY alto unos ms
+    SPI.end();
+    SPI.begin(g_sck, g_miso, g_mosi, g_cs);
+    pinMode(g_cs, OUTPUT);
+    digitalWrite(g_cs, HIGH);
+    pinMode(6, INPUT);
+    pinMode(7, INPUT);
+    SPI.beginTransaction(SPISettings(500000, MSBFIRST, SPI_MODE0));
+    digitalWrite(g_cs, LOW);
+    SPI.transfer(0x89);
+    SPI.transfer(0x7F);
+    digitalWrite(g_cs, HIGH);
+    SPI.endTransaction();
+    bool b6 = false, b7 = false;
+    uint32_t t1 = millis();
+    while (millis() - t1 < 50) { if (digitalRead(6)) b6 = true; if (digitalRead(7)) b7 = true; }
+    Serial.printf("calib: GPIO6=%d GPIO7=%d  (el que sube = BUSY)\n", b6, b7);
     Serial.println("=== Fin ===");
 }
 

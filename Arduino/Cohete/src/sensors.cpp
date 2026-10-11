@@ -17,6 +17,7 @@ bool bmeOK = false;
 bool bnoOK = false;
 float altitudReferencia = 0;
 float lastAlt = 0;
+uint32_t lastAltTime = 0;
 
 const uint32_t SENSOR_RETRY_MS = 2000;
 uint32_t lastBmeRetry = 0;
@@ -108,11 +109,15 @@ void sensorsUpdate() {
         tData.hum = bme.readHumidity();
 
         float currentAlt = bme.readAltitude(1013.25) - altitudReferencia;
-        tData.alt = (tData.alt * 0.7) + (currentAlt * 0.3);
+        tData.alt = (tData.alt * 0.7f) + (currentAlt * 0.3f);
 
-        // La tarea corre a 10 Hz: el delta de 100 ms se multiplica por 10
-        tData.velZ = (currentAlt - lastAlt) * 10.0F;
-        lastAlt = currentAlt;
+        // velocidad vertical desde la altitud FILTRADA y el dt real, con pasa-bajos
+        uint32_t dtms = now - lastAltTime;
+        if (dtms < 1) dtms = 1;
+        float vInst = (tData.alt - lastAlt) / (dtms / 1000.0f);
+        lastAlt = tData.alt;
+        lastAltTime = now;
+        tData.velZ = (tData.velZ * 0.6f) + (vInst * 0.4f);
     } else if (now - lastBmeRetry >= SENSOR_RETRY_MS) {
         lastBmeRetry = now;
         bmeOK = bme.begin(0x76) || bme.begin(0x77);

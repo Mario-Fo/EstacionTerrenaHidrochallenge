@@ -3,7 +3,7 @@
 #include <freertos/FreeRTOS.h>
 #include <freertos/semphr.h>
 
-enum FlightState { EN_ESPERA, ASCENSO, APOGEO, DESCENSO, ATERRIZADO };
+enum FlightState { EN_ESPERA, ASCENSO, DESACOPLE, DESCENSO, ATERRIZADO };
 
 struct TelemetryData {
     float pres = 0;
