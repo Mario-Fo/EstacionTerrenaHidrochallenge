@@ -211,3 +211,12 @@ npm run dev
 - Si la simulación falla, comprueba que la API responda en `http://127.0.0.1:8002/health`.
 - Si no llega telemetría, revisa el Wi‑Fi, la IP y el puerto configurados en el receptor, y confirma que Laravel se inició con `--host=0.0.0.0`.
 - Si Vite no carga estilos o scripts, mantén `npm run dev` activo o ejecuta `npm run build`.
+
+## Unidades de aceleración
+
+Las nuevas lecturas `accX`, `accY` y `accZ` deben enviarse en m/s².
+La API las almacena y devuelve sin conversión. El dashboard, los históricos
+y la comparación calculan la magnitud de cada muestra como
+`sqrt(accX² + accY² + accZ²)`, también en m/s². El campo `accel` de los CSV
+se interpreta en m/s². El firmware actual envía aceleración lineal (sin gravedad).
+Este cambio no convierte los registros antiguos guardados en g.

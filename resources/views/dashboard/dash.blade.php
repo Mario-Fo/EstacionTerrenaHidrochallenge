@@ -52,7 +52,7 @@
                     <p class="text-base font-semibold">Aceleracion</p>
                     <p class="mt-2 text-base font-semibold">
                       <span id="aVal">0.98</span>
-                      <span class="text-sm font-medium text-slate-400">m/s2</span>
+                      <span class="text-sm font-medium text-slate-400">m/s²</span>
                     </p>
                   </div>
 
@@ -68,7 +68,7 @@
                     <p class="text-base font-semibold">Aceleracion en X</p>
                     <p class="mt-2 text-base font-semibold">
                       <span id="axVal">0.98</span>
-                      <span class="text-sm font-medium text-slate-400">g</span>
+                      <span class="text-sm font-medium text-slate-400">m/s²</span>
                     </p>
                   </div>                 
  
@@ -84,7 +84,7 @@
                     <p class="text-base font-semibold">Aceleracion en Y</p>
                     <p class="mt-2 text-base font-semibold">
                       <span id="ayVal">0.98</span>
-                      <span class="text-sm font-medium text-slate-400">g</span>
+                      <span class="text-sm font-medium text-slate-400">m/s²</span>
                     </p>
                   </div>
 
@@ -100,7 +100,7 @@
                     <p class="text-base font-semibold">Aceleracion en Z</p>
                     <p class="mt-2 text-base font-semibold">
                       <span id="azVal">0.98</span>
-                      <span class="text-sm font-medium text-slate-400">g</span>
+                      <span class="text-sm font-medium text-slate-400">m/s²</span>
                     </p>
                   </div>
 
@@ -304,9 +304,9 @@
         lon_deg: null,
         alt_m: null,
         accel_ms2: null,
-        accel_x_g: null,
-        accel_y_g: null,
-        accel_z_g: null,
+        accel_x_ms2: null,
+        accel_y_ms2: null,
+        accel_z_ms2: null,
         rpm: null,
         apogee_m: 0,
         fall_ms: 0,
@@ -318,7 +318,6 @@
       let lastSampleAt = null;
       let lastAltitude = null;
       let lastTelemetryRowId = null;
-      let previousAccelerationMagnitude = null;
 
       function paintTelemetryAside() {
         setText("pVal", telemetry.pressure_pa === null ? "--" : fmt2(telemetry.pressure_pa));
@@ -328,9 +327,9 @@
         setText("lonVal", telemetry.lon_deg === null ? "--" : fmt6(telemetry.lon_deg));
         setText("altVal", telemetry.alt_m === null ? "--" : fmt2(telemetry.alt_m));
         setText("aVal", telemetry.accel_ms2 === null ? "--" : fmt2(telemetry.accel_ms2));
-        setText("axVal", telemetry.accel_x_g === null ? "--" : fmt2(telemetry.accel_x_g));
-        setText("ayVal", telemetry.accel_y_g === null ? "--" : fmt2(telemetry.accel_y_g));
-        setText("azVal", telemetry.accel_z_g === null ? "--" : fmt2(telemetry.accel_z_g));
+        setText("axVal", telemetry.accel_x_ms2 === null ? "--" : fmt2(telemetry.accel_x_ms2));
+        setText("ayVal", telemetry.accel_y_ms2 === null ? "--" : fmt2(telemetry.accel_y_ms2));
+        setText("azVal", telemetry.accel_z_ms2 === null ? "--" : fmt2(telemetry.accel_z_ms2));
         setText("rpmVal", telemetry.rpm === null ? "--" : String(Math.round(telemetry.rpm)));
       }
 
@@ -362,7 +361,7 @@
             },
             scales: {
               x: { title: { display: true, text: "Tiempo (s)" } },
-              y: { beginAtZero: false }
+              y: { beginAtZero: false, title: { display: true, text: label } }
             }
           }
         });
@@ -377,7 +376,7 @@
       }
 
       const chartAlturaTiempo = createRealtimeChart("chartAlturaTiempo", "Altura (m)", "#34d399", 0);
-      const chartAceleracionTiempo = createRealtimeChart("chartAceleracionTiempo", "Aceleracion", "#f59e0b", 0);
+      const chartAceleracionTiempo = createRealtimeChart("chartAceleracionTiempo", "Aceleracion (m/s²)", "#f59e0b", 0);
       const chartVelocidadTiempo = createRealtimeChart("chartVelocidadTiempo", "Velocidad vertical (m/s)", "#38bdf8", 0);
 
       const missionTimeEl = document.getElementById("missionTime");
@@ -567,21 +566,17 @@
         telemetry.lat_deg = Number(sample.lat);
         telemetry.lon_deg = Number(sample.long);
         telemetry.alt_m = Number(sample.alt);
-        telemetry.accel_x_g = Number(sample.accX);
-        telemetry.accel_y_g = Number(sample.accY);
-        telemetry.accel_z_g = Number(sample.accZ);
+        telemetry.accel_x_ms2 = Number(sample.accX);
+        telemetry.accel_y_ms2 = Number(sample.accY);
+        telemetry.accel_z_ms2 = Number(sample.accZ);
         telemetry.rpm = Number(sample.RPM);
 
-        const currentAccelerationMagnitude = Math.sqrt(
-          Math.pow(telemetry.accel_x_g, 2) +
-          Math.pow(telemetry.accel_y_g, 2) +
-          Math.pow(telemetry.accel_z_g, 2)
+        // Los ejes llegan en m/s²: magnitud de esta muestra, sin conversion de g.
+        telemetry.accel_ms2 = Math.hypot(
+          telemetry.accel_x_ms2,
+          telemetry.accel_y_ms2,
+          telemetry.accel_z_ms2
         );
-
-        telemetry.accel_ms2 = previousAccelerationMagnitude === null
-          ? currentAccelerationMagnitude
-          : (currentAccelerationMagnitude + previousAccelerationMagnitude) / 2;
-        previousAccelerationMagnitude = currentAccelerationMagnitude;
 
         if (lastSampleAt !== null && lastAltitude !== null) {
           const dt = (now - lastSampleAt) / 1000;
@@ -654,9 +649,9 @@
           lon_deg: null,
           alt_m: null,
           accel_ms2: null,
-          accel_x_g: null,
-          accel_y_g: null,
-          accel_z_g: null,
+          accel_x_ms2: null,
+          accel_y_ms2: null,
+          accel_z_ms2: null,
           rpm: null,
           apogee_m: 0,
           fall_ms: 0,
@@ -667,7 +662,6 @@
         missionStartAt = null;
         lastSampleAt = null;
         lastAltitude = null;
-        previousAccelerationMagnitude = null;
 
         paintTelemetryAside();
         setText("apogeeMaxVal", "--");

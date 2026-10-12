@@ -109,7 +109,7 @@
                     <th class="px-4 py-3 whitespace-nowrap">RPM</th>
                     <th class="px-4 py-3 whitespace-nowrap">Vel. Caída</th>
                     <th class="px-4 py-3 whitespace-nowrap">Tiempo</th>
-                    <th class="px-4 py-3 whitespace-nowrap">Acel.</th>
+                    <th class="px-4 py-3 whitespace-nowrap">Acel. (m/s²)</th>
                     <th class="px-4 py-3 whitespace-nowrap">Notas</th>
                   </tr>
                 </thead>
@@ -218,7 +218,7 @@
                     <th class="px-4 py-3 whitespace-nowrap">RPM</th>
                     <th class="px-4 py-3 whitespace-nowrap">Vel. Caída</th>
                     <th class="px-4 py-3 whitespace-nowrap">Tiempo</th>
-                    <th class="px-4 py-3 whitespace-nowrap">Acel.</th>
+                    <th class="px-4 py-3 whitespace-nowrap">Acel. (m/s²)</th>
                     <th class="px-4 py-3 whitespace-nowrap">Notas</th>
                   </tr>
                 </thead>
