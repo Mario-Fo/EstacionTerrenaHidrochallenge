@@ -1,5 +1,6 @@
 #include <Arduino.h>
 #include <esp_task_wdt.h>
+#include <WiFi.h>
 
 #include "config.h"
 #include "telemetry.h"
@@ -23,6 +24,23 @@ void TaskSensors(void *pvParameters) {
     }
 }
 
+void handleCommand(const String &cmd) {
+    if (cmd == "CAM") {
+        Serial.println("CMD: camara ON (boton 1s)");
+        digitalWrite(CAM_PIN, HIGH);
+        vTaskDelay(pdMS_TO_TICKS(1000));
+        digitalWrite(CAM_PIN, LOW);
+        radioSendAck("ACK:CAM");
+    } else if (cmd == "EJECT") {
+        Serial.println("CMD: eyeccion paracaidas");
+        xSemaphoreTake(dataMutex, portMAX_DELAY);
+        tData.paracaidas_eyectado = true;
+        xSemaphoreGive(dataMutex);
+        ledcWrite(SERVO_CH, 102);
+        radioSendAck("ACK:EJECT");
+    }
+}
+
 void TaskLoRa(void *pvParameters) {
     // Init fuera del WDT: con el modulo ausente puede tardar varios segundos
     radioOK = radioInit();
@@ -40,14 +58,20 @@ void TaskLoRa(void *pvParameters) {
             esp_task_wdt_add(NULL);
         }
 
-        if (millis() - lastTx >= 1000) {
-            lastTx = millis();
-            if (radioOK) {
+        if (radioOK) {
+            if (millis() - lastTx >= 1000) {
+                lastTx = millis();
                 radioTransmit();
-            } else {
-                Serial.print("TELEMETRIA (sin LoRa): ");
-                Serial.println(telemetryJson());
             }
+            // ventana de escucha de comandos (la estacion responde con CAM/EJECT)
+            String cmd;
+            if (radioCheckCommand(cmd, 300)) {
+                handleCommand(cmd);
+            }
+        } else if (millis() - lastTx >= 1000) {
+            lastTx = millis();
+            Serial.print("TELEMETRIA (sin LoRa): ");
+            Serial.println(telemetryJson());
         }
 
         vTaskDelay(pdMS_TO_TICKS(10));
@@ -55,6 +79,10 @@ void TaskLoRa(void *pvParameters) {
 }
 
 void setup() {
+    setCpuFrequencyMhz(80);   // baja el CPU a 80 MHz (ahorro de bateria)
+    WiFi.mode(WIFI_OFF);      // apaga WiFi
+    btStop();                 // apaga Bluetooth/BLE
+
     Serial.begin(115200);
 
     // Margen amplio para tolerar bloqueos puntuales de LoRa/I2C (timeout en segundos)
@@ -62,8 +90,8 @@ void setup() {
 
     dataMutex = xSemaphoreCreateMutex();
 
-    pinMode(SERVO_PWR_PIN, OUTPUT);
-    digitalWrite(SERVO_PWR_PIN, LOW); // servo sin alimentar hasta el despliegue
+    pinMode(CAM_PIN, OUTPUT);
+    digitalWrite(CAM_PIN, LOW); // boton de camara sin pulsar
 
     ledcSetup(SERVO_CH, 50, 10);
     ledcAttachPin(SERVO_PIN, SERVO_CH);

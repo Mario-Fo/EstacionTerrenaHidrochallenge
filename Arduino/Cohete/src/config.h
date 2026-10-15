@@ -14,10 +14,10 @@
 #define GPS_TX_PIN 43
 #define GPS_RX_PIN 44
 
-#define SERVO_PIN 7
+#define SERVO_PIN 8
 #define SERVO_CH  0
-#define SERVO_PWR_PIN 4
-#define RPM_PIN   8
+#define CAM_PIN   7
+#define RPM_PIN   4
 
 #define LED_PIN 48
 
@@ -26,5 +26,5 @@
 #define LORA_SF       7
 #define LORA_CR       7
 #define LORA_SYNCWORD 0x12
-#define LORA_PWR      22
+#define LORA_PWR      14
 #define LORA_PREAMBLE 8

@@ -21,7 +21,6 @@ void flightUpdate() {
             cnt = (v <= 0.0f && alt > 10.0f) ? cnt + 1 : 0;
             if (cnt >= 3) {
                 tData.paracaidas_eyectado = true;
-                digitalWrite(SERVO_PWR_PIN, HIGH); // habilita alimentacion del servo (MOSFET)
                 ledcWrite(SERVO_CH, 102);          // aprox 180 grados
                 flightState = DESACOPLE;
                 cnt = 0;

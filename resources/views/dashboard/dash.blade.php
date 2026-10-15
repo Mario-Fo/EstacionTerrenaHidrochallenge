@@ -377,8 +377,48 @@
         chart.update("none");
       }
 
+      function createAccelChart(canvasId) {
+        if (typeof Chart === "undefined") return null;
+        const canvas = document.getElementById(canvasId);
+        if (!canvas) return null;
+        const mk = (label, color) => ({
+          label, data: Array(chartTimeline.length).fill(0),
+          borderColor: color, backgroundColor: color, borderWidth: 2,
+          pointRadius: 1, tension: 0.25
+        });
+        return new Chart(canvas.getContext("2d"), {
+          type: "line",
+          data: { labels: chartTimeline, datasets: [mk("X (m/s²)", "#ef4444"), mk("Y (m/s²)", "#22c55e"), mk("Z (m/s²)", "#3b82f6")] },
+          options: {
+            responsive: true, maintainAspectRatio: false, animation: false,
+            plugins: { legend: { display: true, labels: { boxWidth: 10, font: { size: 10 } } } },
+            scales: {
+              x: { title: { display: true, text: "Tiempo (s)" } },
+              y: { beginAtZero: false, title: { display: true, text: "Aceleracion (m/s²)" } }
+            }
+          }
+        });
+      }
+
+      function pushChartValue3(chart, x, y, z) {
+        if (!chart) return;
+        const ds = chart.data.datasets;
+        const vals = [x, y, z];
+        for (let i = 0; i < 3; i++) {
+          ds[i].data.push(vals[i]);
+          while (ds[i].data.length > chartTimeline.length) ds[i].data.shift();
+        }
+        chart.update("none");
+      }
+
+      function clearChart3(chart) {
+        if (!chart) return;
+        chart.data.datasets.forEach((d) => { d.data = Array(chartTimeline.length).fill(null); });
+        chart.update("none");
+      }
+
       const chartAlturaTiempo = createRealtimeChart("chartAlturaTiempo", "Altura (m)", "#34d399", 0);
-      const chartAceleracionTiempo = createRealtimeChart("chartAceleracionTiempo", "Aceleracion (m/s²)", "#f59e0b", 0);
+      const chartAceleracionTiempo = createAccelChart("chartAceleracionTiempo");
       const chartVelocidadTiempo = createRealtimeChart("chartVelocidadTiempo", "Velocidad vertical (m/s)", "#38bdf8", 0);
 
       const missionTimeEl = document.getElementById("missionTime");
@@ -598,7 +638,7 @@
         paintTelemetryAside();
         paintRequirements();
         pushChartValue(chartAlturaTiempo, telemetry.alt_m);
-        pushChartValue(chartAceleracionTiempo, telemetry.accel_ms2);
+        pushChartValue3(chartAceleracionTiempo, telemetry.accel_x_ms2, telemetry.accel_y_ms2, telemetry.accel_z_ms2);
         pushChartValue(chartVelocidadTiempo, telemetry.fall_ms);
 
         if (Number.isFinite(telemetry.lat_deg) && Number.isFinite(telemetry.lon_deg)) {
@@ -677,7 +717,7 @@
         resetStatusCard(aireTimeCard, aireTimeBadge);
 
         clearChart(chartAlturaTiempo);
-        clearChart(chartAceleracionTiempo);
+        clearChart3(chartAceleracionTiempo);
         clearChart(chartVelocidadTiempo);
 
         if (map && marker) {

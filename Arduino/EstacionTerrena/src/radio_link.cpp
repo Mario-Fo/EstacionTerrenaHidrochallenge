@@ -3,7 +3,7 @@
 #include <SPI.h>
 #include <RadioLib.h>
 
-LLCC68 radio = new Module(LORA_CS, LORA_DIO1, LORA_RST, LORA_BUSY);
+SX1262 radio = new Module(LORA_CS, LORA_DIO1, LORA_RST, LORA_BUSY);
 
 void radioInit() {
     SPI.begin(LORA_SCK, LORA_MISO, LORA_MOSI, LORA_CS);
@@ -42,4 +42,10 @@ bool radioCheckRx(String &out) {
     }
     Serial.printf("readData err=%d RSSI=%.0f SNR=%.1f\n", st, rssi, snr);
     return false;
+}
+
+void radioSendCommand(const char *cmd) {
+    String s = cmd;
+    radio.transmit(s);
+    radio.startReceive();   // re-armar la escucha
 }

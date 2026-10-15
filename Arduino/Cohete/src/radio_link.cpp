@@ -77,3 +77,19 @@ void radioTransmit() {
         Serial.println(state);
     }
 }
+
+bool radioCheckCommand(String &cmd, uint32_t timeout) {
+    if (!radioOK) return false;
+    String incoming;
+    if (radio.receive(incoming, timeout) != RADIOLIB_ERR_NONE) return false;
+    incoming.trim();
+    if (incoming.length() == 0) return false;
+    cmd = incoming;
+    return true;
+}
+
+void radioSendAck(const char *msg) {
+    if (!radioOK) return;
+    String ack = msg;
+    radio.transmit(ack);
+}

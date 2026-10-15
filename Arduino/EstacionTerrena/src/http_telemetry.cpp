@@ -37,3 +37,16 @@ bool httpPost(const String &payload) {
     http.end();
     return code > 0;
 }
+
+String httpGetCommand() {
+    HTTPClient http;
+    http.begin(COMMAND_URL);
+    int code = http.GET();
+    String cmd = "";
+    if (code > 0) {
+        cmd = http.getString();
+        cmd.trim();
+    }
+    http.end();
+    return cmd;
+}
