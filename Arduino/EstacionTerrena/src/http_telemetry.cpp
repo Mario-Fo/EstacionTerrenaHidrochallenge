@@ -3,10 +3,16 @@
 #include "secrets.h"
 #include <Arduino.h>
 #include <WiFi.h>
+#include <esp_wifi.h>
 #include <HTTPClient.h>
 
 void connectWiFi() {
     if (WiFi.status() == WL_CONNECTED) return;
+    // Canali fijo:Pixel 6 emite el lado 2.4 GHz en el canal ESPNOW_CHANNEL.
+    // Ponerlo antes de begin hace que el STA escanee y busse el al red del canal.
+    esp_wifi_set_promiscuous(true);
+    esp_wifi_set_channel(ESPNOW_CHANNEL, WIFI_SECOND_CHAN_NONE);
+    esp_wifi_set_promiscuous(false);
     WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
     Serial.print("Conectando a WiFi...");
     unsigned long start = millis();
@@ -16,6 +22,7 @@ void connectWiFi() {
     }
     if (WiFi.status() == WL_CONNECTED) {
         Serial.println("\nWiFi Conectado!");
+        Serial.printf("Canal real: %d RSSI: %d\n", WiFi.channel(), WiFi.RSSI());
     } else {
         Serial.println("\nWiFi Fallo.");
     }

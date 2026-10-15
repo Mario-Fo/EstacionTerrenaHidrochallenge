@@ -1,27 +1,13 @@
 #pragma once
 
-// Modulo LoRa: Ebyte E22-900M22S (SX1262, TCXO)
-#define LORA_SCK  2
-#define LORA_MISO 4
-#define LORA_MOSI 3
-#define LORA_CS   1
-#define LORA_RST  5
-#define LORA_DIO1 7
-#define LORA_BUSY 6
-
+// ESP-NOW (reemplaza LoRa) por broadcast. Ambas placas en el mismo canal
+// que el WiFi 2.4 GHz de la red local (Pixel 6: su lado 2.4 GHz es canal 1).
+#define ESPNOW_CHANNEL 1
 
 #define BATT_PIN      8
 #define BATT_DIVISOR  2.0F
 #define BATT_MIN_V    3.3F
 #define BATT_MAX_V    4.2F
 
-#define LORA_FREQ     915.0
-#define LORA_BW       125.0
-#define LORA_SF       7
-#define LORA_CR       7
-#define LORA_SYNCWORD 0x12
-#define LORA_PWR      22
-#define LORA_PREAMBLE 8
-#define LORA_TCXO     2.2
-
-#define SERVER_URL "http://172.28.32.128:8000/api/lecturas-multi"
+// Servidor Laravel que corre en la laptop conectada a esta misma red
+#define SERVER_URL "http://10.143.41.144:8000/api/lecturas-multi"
