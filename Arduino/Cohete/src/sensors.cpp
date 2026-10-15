@@ -19,6 +19,8 @@ float altitudReferencia = 0;
 float lastAlt = 0;
 uint32_t lastAltTime = 0;
 float accOffX = 0, accOffY = 0, accOffZ = 0;
+// Linea base adaptativa: cancela el sesgo residual del BNO en reposo (ver sensorsUpdate).
+float baseX = 0, baseY = 0, baseZ = 0;
 
 const uint32_t SENSOR_RETRY_MS = 2000;
 uint32_t lastBmeRetry = 0;
@@ -182,10 +184,27 @@ void sensorsUpdate() {
     if (bnoOK) {
         sensors_event_t event;
         bno->getEvent(&event, Adafruit_BNO055::VECTOR_LINEARACCEL);
-        tData.accX = event.acceleration.x - accOffX;
-        tData.accY = event.acceleration.y - accOffY;
+        float ax = event.acceleration.x - accOffX;
+        float ay = event.acceleration.y - accOffY;
         // Montaje invertido: corregir solo Z conservando el signo del movimiento.
-        tData.accZ = -event.acceleration.z - accOffZ;
+        float az = -event.acceleration.z - accOffZ;
+
+        // Tracker de linea base: en reposo (EN_ESPERA) la aceleracion lineal
+        // debe dar ~0. Si es pequena (<2 m/s2) se corrige el cero muy despacio
+        // (~10 s). Al moverse se congela para no cancelar la aceleracion real.
+        float ox = ax - baseX;
+        float oy = ay - baseY;
+        float oz = az - baseZ;
+        if (flightState == EN_ESPERA) {
+            float mag = sqrtf(ox*ox + oy*oy + oz*oz);
+            if (mag < 2.0f) {
+                const float k = 0.01f;   // 1% por muestra @10 Hz
+                baseX += k * ox;
+                baseY += k * oy;
+                baseZ += k * oz;
+            }
+        }
+        tData.accX = ox; tData.accY = oy; tData.accZ = oz;
     } else if (now - lastBnoRetry >= SENSOR_RETRY_MS) {
         lastBnoRetry = now;
         bnoOK = bnoInit();
