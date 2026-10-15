@@ -60,9 +60,8 @@ void TaskLoRa(void *pvParameters) {
 }
 
 void setup() {
-    setCpuFrequencyMhz(80);   // baja el CPU a 80 MHz (ahorro de bateria)
-    WiFi.mode(WIFI_OFF);      // apaga WiFi
-    btStop();                 // apaga Bluetooth/BLE
+    setCpuFrequencyMhz(160);  // 160 MHz minimo estable con WiFi/ESP-NOW
+    btStop();                 // apaga Bluetooth/BLE (WiFi queda ON para ESP-NOW)
 
     Serial.begin(115200);
 
@@ -80,5 +79,6 @@ void setup() {
 
 void loop() {
     cameraUpdate();
+    flightServoUpdate();   // mantiene la secuencia de despliegue (no bloqueante)
     vTaskDelay(pdMS_TO_TICKS(1));
 }

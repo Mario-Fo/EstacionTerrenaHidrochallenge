@@ -2,33 +2,58 @@
 #include "radio_link.h"
 #include "telemetry.h"
 #include <Arduino.h>
-#include <SPI.h>
-#include <RadioLib.h>
+#include <WiFi.h>
+#include <esp_now.h>
+#include <esp_wifi.h>
 #include <ArduinoJson.h>
 #include "camera.h"
 #include "flight.h"
 
-static volatile bool commandReceived = false;
-void IRAM_ATTR onCommandReceived() { commandReceived = true; }
-
-LLCC68 radio = new Module(LORA_CS, LORA_DIO1, LORA_RST, LORA_BUSY);
 bool radioOK = false;
+
+static uint8_t broadcastMac[6] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
+
+// Comando recibido por ESP-NOW (se procesa en radioPollCommand, fuera del callback).
+static volatile bool commandReceived = false;
+static volatile char commandChar = 0;
+
+static void onDataRecv(const uint8_t *mac_addr, const uint8_t *data, int data_len) {
+    (void)mac_addr;
+    if (data_len == 1) {
+        char c = (char)data[0];
+        if (c == 'c' || c == 'e') {
+            commandChar = c;
+            commandReceived = true;
+        }
+    }
+}
 
 bool radioInit() {
     pinMode(LED_PIN, OUTPUT);
     digitalWrite(LED_PIN, LOW);
-    SPI.begin(LORA_SCK, LORA_MISO, LORA_MOSI, LORA_CS);
-    int state = radio.begin(LORA_FREQ, LORA_BW, LORA_SF, LORA_CR, LORA_SYNCWORD, LORA_PWR, LORA_PREAMBLE);
-    if (state != RADIOLIB_ERR_NONE) {
-        Serial.print("LoRa fallo, codigo: ");
-        Serial.println(state);
+
+    WiFi.mode(WIFI_STA);
+    WiFi.disconnect();
+    esp_wifi_set_channel(ESPNOW_CHANNEL, WIFI_SECOND_CHAN_NONE);
+
+    if (esp_now_init() != ESP_OK) {
+        Serial.println("ESP-NOW init fallo");
         radioOK = false;
         return false;
     }
-    Serial.println("LoRa inicializado.");
+    esp_now_register_recv_cb(onDataRecv);
+
+    esp_now_peer_info_t peer = {};
+    memcpy(peer.peer_addr, broadcastMac, 6);
+    peer.channel = ESPNOW_CHANNEL;
+    peer.encrypt = false;
+    if (esp_now_add_peer(&peer) != ESP_OK) {
+        Serial.println("ESP-NOW add_peer fallo");
+        radioOK = false;
+        return false;
+    }
+    Serial.println("ESP-NOW inicializado.");
     radioOK = true;
-    radio.setPacketReceivedAction(onCommandReceived);
-    radio.startReceive();
     return true;
 }
 
@@ -77,41 +102,30 @@ void radioTransmit() {
 
     Serial.print("TX: ");
     Serial.println(jsonStr);
-    int state = radio.transmit(jsonStr);
-    commandReceived = false;
-    radio.startReceive();
+    esp_err_t r = esp_now_send(broadcastMac, (uint8_t*)jsonStr.c_str(), jsonStr.length());
     digitalWrite(LED_PIN, !digitalRead(LED_PIN));
 
-    if (state != RADIOLIB_ERR_NONE) {
-        Serial.print("TX fallo, codigo: ");
-        Serial.println(state);
+    if (r != ESP_OK) {
+        Serial.printf("TX fallo: %d\n", r);
     }
 }
 
 void radioPollCommand() {
     if (!radioOK || !commandReceived) return;
     commandReceived = false;
-    String command;
-    int state = radio.readData(command);
-    command.trim();
-    if (state != RADIOLIB_ERR_NONE) {
-        radio.startReceive();
-        return;
-    }
-    if (command == "c") {
+    char command = commandChar;
+    if (command == 'c') {
         cameraRequest();
         Serial.println("Camara: pulso solicitado (1 segundo)");
         radioSendAck("ACK:c");
-    } else if (command == "e") {
-        Serial.println(flightDeploy() ? "Servo: despliegue solicitado por LoRa"
+    } else if (command == 'e') {
+        Serial.println(flightDeploy() ? "Servo: despliegue solicitado por ESP-NOW"
                                      : "Servo: ya desplegado, comando ignorado");
         radioSendAck("ACK:e");
     }
-    radio.startReceive();
 }
 
 void radioSendAck(const char *msg) {
     if (!radioOK) return;
-    String ack = msg;
-    radio.transmit(ack);
+    esp_now_send(broadcastMac, (uint8_t*)msg, strlen(msg));
 }

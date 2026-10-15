@@ -22,13 +22,18 @@
 #define SERVO_PIN 8
 #define SERVO_FREQ_HZ 50
 #define SERVO_RESOLUTION_BITS 10
-// Mantiene los pulsos usados originalmente: aprox. 1 ms y 2 ms.
-// Ajustar al recorrido mecanico y a las especificaciones del servo.
-#define SERVO_CLOSED_DUTY 51
-#define SERVO_DEPLOYED_DUTY 102
+// 10 bits @ 50 Hz: 51 ~= 1.0 ms (0°), 77 ~= 1.5 ms (90°), 102 ~= 2.0 ms (180°).
+// Al desplegar, el servo oscila 90° de un lado a otro (anti-atasco) durante 5 s.
+#define SERVO_CLOSED_DUTY 51      // reposo
+#define SERVO_DEPLOYED_DUTY 77    // desplegado (90° respecto del reposo)
+#define SERVO_WIGGLE_MS 5000      // duracion de la sacudida
+#define SERVO_WIGGLE_PERIOD_MS 800 // ciclo completo sube+baja
 #define RPM_PIN   4
 
 #define LED_PIN 48
+
+// ESP-NOW (reemplaza LoRa): telemetria por broadcast JSON + comandos 'c'/'e' de 1 byte.
+#define ESPNOW_CHANNEL 1
 
 #define LORA_FREQ     915.0
 #define LORA_BW       125.0
@@ -37,3 +42,12 @@
 #define LORA_SYNCWORD 0x12
 #define LORA_PWR      14
 #define LORA_PREAMBLE 8
+
+// Deteccion de vuelo (ajustar en banco con datos reales)
+#define LAUNCH_VEL_MS     5.0f    // velocidad vertical (baro) para declarar despegue
+#define LAUNCH_ACC_MS2    15.0f   // aceleracion vertical (BNO) alternativa para despegue
+#define APOGEE_MIN_ALT_M  30.0f   // altitud minima para declarar apogee
+#define APOGEE_CONFIRM    4       // ciclos consecutivos confirmando apogee
+#define DESCENT_VEL_MS    -1.0f   // velocidad para pasar a DESCENSO
+#define LANDING_VEL_MS    0.5f    // velocidad "quieto" para aterrizaje
+#define LANDING_ALT_M     5.0f    // altitud "bajo" para aterrizaje
