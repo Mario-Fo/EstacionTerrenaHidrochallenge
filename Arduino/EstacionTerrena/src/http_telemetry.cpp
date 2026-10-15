@@ -38,7 +38,6 @@ bool httpPost(const String &payload) {
     return code > 0;
 }
 
-<<<<<<< HEAD
 String httpFetchCommand() {
     String url = SERVER_URL;
     const int api = url.indexOf("/api/");
@@ -52,17 +51,4 @@ String httpFetchCommand() {
     http.end();
     command.trim();
     return command;
-=======
-String httpGetCommand() {
-    HTTPClient http;
-    http.begin(COMMAND_URL);
-    int code = http.GET();
-    String cmd = "";
-    if (code > 0) {
-        cmd = http.getString();
-        cmd.trim();
-    }
-    http.end();
-    return cmd;
->>>>>>> cb0335b8459810b43a28a7ece3191b64527a81b7
 }

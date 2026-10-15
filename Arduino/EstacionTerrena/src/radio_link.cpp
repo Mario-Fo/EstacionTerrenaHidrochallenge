@@ -44,7 +44,6 @@ bool radioCheckRx(String &out) {
     return false;
 }
 
-<<<<<<< HEAD
 bool radioSendCommand(char command) {
     const char payload[] = {command, '\0'};
     const int state = radio.transmit(payload);
@@ -52,10 +51,4 @@ bool radioSendCommand(char command) {
     radio.startReceive();
     Serial.printf("Comando LoRa %c: %d\n", command, state);
     return state == RADIOLIB_ERR_NONE;
-=======
-void radioSendCommand(const char *cmd) {
-    String s = cmd;
-    radio.transmit(s);
-    radio.startReceive();   // re-armar la escucha
->>>>>>> cb0335b8459810b43a28a7ece3191b64527a81b7
 }

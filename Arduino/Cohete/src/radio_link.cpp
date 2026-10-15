@@ -1,4 +1,5 @@
 #include "config.h"
+#include "radio_link.h"
 #include "telemetry.h"
 #include <Arduino.h>
 #include <SPI.h>
@@ -87,36 +88,30 @@ void radioTransmit() {
     }
 }
 
-<<<<<<< HEAD
 void radioPollCommand() {
     if (!radioOK || !commandReceived) return;
     commandReceived = false;
     String command;
     int state = radio.readData(command);
-    radio.startReceive();
     command.trim();
-    if (state != RADIOLIB_ERR_NONE) return;
+    if (state != RADIOLIB_ERR_NONE) {
+        radio.startReceive();
+        return;
+    }
     if (command == "c") {
         cameraRequest();
         Serial.println("Camara: pulso solicitado (1 segundo)");
+        radioSendAck("ACK:c");
     } else if (command == "e") {
         Serial.println(flightDeploy() ? "Servo: despliegue solicitado por LoRa"
                                      : "Servo: ya desplegado, comando ignorado");
+        radioSendAck("ACK:e");
     }
-=======
-bool radioCheckCommand(String &cmd, uint32_t timeout) {
-    if (!radioOK) return false;
-    String incoming;
-    if (radio.receive(incoming, timeout) != RADIOLIB_ERR_NONE) return false;
-    incoming.trim();
-    if (incoming.length() == 0) return false;
-    cmd = incoming;
-    return true;
+    radio.startReceive();
 }
 
 void radioSendAck(const char *msg) {
     if (!radioOK) return;
     String ack = msg;
     radio.transmit(ack);
->>>>>>> cb0335b8459810b43a28a7ece3191b64527a81b7
 }

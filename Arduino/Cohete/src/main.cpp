@@ -26,23 +26,6 @@ void TaskSensors(void *pvParameters) {
     }
 }
 
-void handleCommand(const String &cmd) {
-    if (cmd == "CAM") {
-        Serial.println("CMD: camara ON (boton 1s)");
-        digitalWrite(CAM_PIN, HIGH);
-        vTaskDelay(pdMS_TO_TICKS(1000));
-        digitalWrite(CAM_PIN, LOW);
-        radioSendAck("ACK:CAM");
-    } else if (cmd == "EJECT") {
-        Serial.println("CMD: eyeccion paracaidas");
-        xSemaphoreTake(dataMutex, portMAX_DELAY);
-        tData.paracaidas_eyectado = true;
-        xSemaphoreGive(dataMutex);
-        ledcWrite(SERVO_CH, 102);
-        radioSendAck("ACK:EJECT");
-    }
-}
-
 void TaskLoRa(void *pvParameters) {
     // Init fuera del WDT: con el modulo ausente puede tardar varios segundos
     radioOK = radioInit();
@@ -66,11 +49,6 @@ void TaskLoRa(void *pvParameters) {
                 lastTx = millis();
                 radioTransmit();
             }
-            // ventana de escucha de comandos (la estacion responde con CAM/EJECT)
-            String cmd;
-            if (radioCheckCommand(cmd, 300)) {
-                handleCommand(cmd);
-            }
         } else if (millis() - lastTx >= 1000) {
             lastTx = millis();
             Serial.print("TELEMETRIA (sin LoRa): ");
@@ -93,13 +71,7 @@ void setup() {
 
     dataMutex = xSemaphoreCreateMutex();
 
-<<<<<<< HEAD
     flightInit();
-=======
-    pinMode(CAM_PIN, OUTPUT);
-    digitalWrite(CAM_PIN, LOW); // boton de camara sin pulsar
->>>>>>> cb0335b8459810b43a28a7ece3191b64527a81b7
-
     cameraInit();
 
     xTaskCreatePinnedToCore(TaskSensors, "Sensors", 4096, NULL, 2, NULL, 0);

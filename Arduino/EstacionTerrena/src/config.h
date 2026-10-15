@@ -24,5 +24,4 @@
 #define LORA_PREAMBLE 8
 #define LORA_TCXO     2.2
 
-#define SERVER_URL "http://10.50.139.111:8000/api/lecturas-multi"
-#define COMMAND_URL "http://10.50.139.111:8000/api/comandos/pendiente"
+#define SERVER_URL "http://172.28.32.128:8000/api/lecturas-multi"
