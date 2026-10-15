@@ -1,6 +1,29 @@
 #include "config.h"
 #include "telemetry.h"
 #include <Arduino.h>
+#include "flight.h"
+
+void flightInit() {
+    ledcSetup(SERVO_CH, SERVO_FREQ_HZ, SERVO_RESOLUTION_BITS);
+    ledcWrite(SERVO_CH, SERVO_CLOSED_DUTY);
+    ledcAttachPin(SERVO_PIN, SERVO_CH);
+}
+
+// El llamador debe tener dataMutex: comparten esta accion ambas tareas.
+static bool deployLocked() {
+    if (tData.paracaidas_eyectado) return false;
+    ledcWrite(SERVO_CH, SERVO_DEPLOYED_DUTY);
+    tData.paracaidas_eyectado = true;
+    flightState = DESACOPLE;
+    return true;
+}
+
+bool flightDeploy() {
+    xSemaphoreTake(dataMutex, portMAX_DELAY);
+    const bool deployed = deployLocked();
+    xSemaphoreGive(dataMutex);
+    return deployed;
+}
 
 void flightUpdate() {
     xSemaphoreTake(dataMutex, portMAX_DELAY);
@@ -20,10 +43,7 @@ void flightUpdate() {
             // apogeo: la velocidad cruza a <= 0 con altitud suficiente (3 ciclos)
             cnt = (v <= 0.0f && alt > 10.0f) ? cnt + 1 : 0;
             if (cnt >= 3) {
-                tData.paracaidas_eyectado = true;
-                digitalWrite(SERVO_PWR_PIN, HIGH); // habilita alimentacion del servo (MOSFET)
-                ledcWrite(SERVO_CH, 102);          // aprox 180 grados
-                flightState = DESACOPLE;
+                deployLocked();
                 cnt = 0;
             }
             break;

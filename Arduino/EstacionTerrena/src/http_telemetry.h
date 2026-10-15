@@ -4,3 +4,4 @@
 
 void connectWiFi();
 bool httpPost(const String &payload);
+String httpFetchCommand();

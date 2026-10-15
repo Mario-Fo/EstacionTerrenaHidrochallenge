@@ -4,6 +4,11 @@
 #include <SPI.h>
 #include <RadioLib.h>
 #include <ArduinoJson.h>
+#include "camera.h"
+#include "flight.h"
+
+static volatile bool commandReceived = false;
+void IRAM_ATTR onCommandReceived() { commandReceived = true; }
 
 LLCC68 radio = new Module(LORA_CS, LORA_DIO1, LORA_RST, LORA_BUSY);
 bool radioOK = false;
@@ -21,6 +26,8 @@ bool radioInit() {
     }
     Serial.println("LoRa inicializado.");
     radioOK = true;
+    radio.setPacketReceivedAction(onCommandReceived);
+    radio.startReceive();
     return true;
 }
 
@@ -70,10 +77,29 @@ void radioTransmit() {
     Serial.print("TX: ");
     Serial.println(jsonStr);
     int state = radio.transmit(jsonStr);
+    commandReceived = false;
+    radio.startReceive();
     digitalWrite(LED_PIN, !digitalRead(LED_PIN));
 
     if (state != RADIOLIB_ERR_NONE) {
         Serial.print("TX fallo, codigo: ");
         Serial.println(state);
+    }
+}
+
+void radioPollCommand() {
+    if (!radioOK || !commandReceived) return;
+    commandReceived = false;
+    String command;
+    int state = radio.readData(command);
+    radio.startReceive();
+    command.trim();
+    if (state != RADIOLIB_ERR_NONE) return;
+    if (command == "c") {
+        cameraRequest();
+        Serial.println("Camara: pulso solicitado (1 segundo)");
+    } else if (command == "e") {
+        Serial.println(flightDeploy() ? "Servo: despliegue solicitado por LoRa"
+                                     : "Servo: ya desplegado, comando ignorado");
     }
 }

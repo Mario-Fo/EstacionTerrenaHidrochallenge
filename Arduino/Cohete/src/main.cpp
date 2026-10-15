@@ -6,6 +6,7 @@
 #include "sensors.h"
 #include "flight.h"
 #include "radio_link.h"
+#include "camera.h"
 
 SemaphoreHandle_t dataMutex;
 TelemetryData tData;
@@ -17,6 +18,7 @@ void TaskSensors(void *pvParameters) {
 
     while (1) {
         esp_task_wdt_reset();
+
         sensorsUpdate();
         flightUpdate();
         vTaskDelay(pdMS_TO_TICKS(100)); // 10 Hz
@@ -32,6 +34,7 @@ void TaskLoRa(void *pvParameters) {
     uint32_t lastRetry = 0;
     while (1) {
         esp_task_wdt_reset();
+        radioPollCommand();
 
         if (!radioOK && millis() - lastRetry >= 10000) {
             lastRetry = millis();
@@ -62,17 +65,15 @@ void setup() {
 
     dataMutex = xSemaphoreCreateMutex();
 
-    pinMode(SERVO_PWR_PIN, OUTPUT);
-    digitalWrite(SERVO_PWR_PIN, LOW); // servo sin alimentar hasta el despliegue
+    flightInit();
 
-    ledcSetup(SERVO_CH, 50, 10);
-    ledcAttachPin(SERVO_PIN, SERVO_CH);
-    ledcWrite(SERVO_CH, 51); // 0 grados
+    cameraInit();
 
     xTaskCreatePinnedToCore(TaskSensors, "Sensors", 4096, NULL, 2, NULL, 0);
     xTaskCreatePinnedToCore(TaskLoRa, "LoRaTx", 8192, NULL, 1, NULL, 1);
 }
 
 void loop() {
-    vTaskDelay(portMAX_DELAY);
+    cameraUpdate();
+    vTaskDelay(pdMS_TO_TICKS(1));
 }

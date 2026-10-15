@@ -37,3 +37,18 @@ bool httpPost(const String &payload) {
     http.end();
     return code > 0;
 }
+
+String httpFetchCommand() {
+    String url = SERVER_URL;
+    const int api = url.indexOf("/api/");
+    if (api < 0) return "";
+    url = url.substring(0, api) + "/api/comandos/pendiente";
+    HTTPClient http;
+    http.setTimeout(2000);
+    http.begin(url);
+    const int status = http.GET();
+    String command = status == 200 ? http.getString() : "";
+    http.end();
+    command.trim();
+    return command;
+}

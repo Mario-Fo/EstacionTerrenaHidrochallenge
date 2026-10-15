@@ -1,5 +1,6 @@
 #include <Arduino.h>
 #include <WiFi.h>
+#include <freertos/queue.h>
 
 #include "config.h"
 #include "radio_link.h"
@@ -9,6 +10,7 @@
 String pendingJson = "";
 bool hasPendingData = false;
 portMUX_TYPE dataMux = portMUX_INITIALIZER_UNLOCKED;
+QueueHandle_t commandQueue;
 
 void TaskRadio(void *pvParameters) {
     radioInit();
@@ -23,6 +25,12 @@ void TaskRadio(void *pvParameters) {
             pendingJson = incoming;
             hasPendingData = true;
             portEXIT_CRITICAL(&dataMux);
+            // El cohete vuelve a escuchar despues de transmitir telemetria.
+            char command;
+            if (xQueueReceive(commandQueue, &command, 0) == pdTRUE) {
+                vTaskDelay(pdMS_TO_TICKS(30));
+                radioSendCommand(command);
+            }
         }
 
         if (millis() - lastBatt >= 5000) {
@@ -37,7 +45,19 @@ void TaskRadio(void *pvParameters) {
 void TaskHTTP(void *pvParameters) {
     connectWiFi();
     uint8_t retries = 0;
+    uint32_t lastCommandPoll = 0;
     while (1) {
+        if (millis() - lastCommandPoll >= 1000 &&
+            WiFi.status() == WL_CONNECTED && uxQueueSpacesAvailable(commandQueue) > 0) {
+            lastCommandPoll = millis();
+            String command = httpFetchCommand();
+            if (command == "c" || command == "e") {
+                char value = command[0];
+                xQueueSend(commandQueue, &value, 0);
+            } else if (command.length()) {
+                Serial.println("Comando no soportado por este firmware: " + command);
+            }
+        }
         if (hasPendingData) {
             String toSend;
             portENTER_CRITICAL(&dataMux);
@@ -72,6 +92,11 @@ void setup() {
     Serial.begin(115200);
     WiFi.mode(WIFI_STA);
     batteryInit();
+    commandQueue = xQueueCreate(1, sizeof(char));
+    if (!commandQueue) {
+        Serial.println("No se pudo crear la cola de comandos");
+        return;
+    }
 
     xTaskCreatePinnedToCore(TaskRadio, "LoRaRx", 8192, NULL, 2, NULL, 1);
     xTaskCreatePinnedToCore(TaskHTTP, "HTTP", 8192, NULL, 1, NULL, 0);

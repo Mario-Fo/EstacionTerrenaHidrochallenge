@@ -5,3 +5,4 @@
 void radioInit();
 void radioStartListen();
 bool radioCheckRx(String &out);
+bool radioSendCommand(char command);

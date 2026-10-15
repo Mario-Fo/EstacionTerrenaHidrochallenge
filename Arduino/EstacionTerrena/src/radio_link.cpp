@@ -43,3 +43,12 @@ bool radioCheckRx(String &out) {
     Serial.printf("readData err=%d RSSI=%.0f SNR=%.1f\n", st, rssi, snr);
     return false;
 }
+
+bool radioSendCommand(char command) {
+    const char payload[] = {command, '\0'};
+    const int state = radio.transmit(payload);
+    rxFlag = false;
+    radio.startReceive();
+    Serial.printf("Comando LoRa %c: %d\n", command, state);
+    return state == RADIOLIB_ERR_NONE;
+}
