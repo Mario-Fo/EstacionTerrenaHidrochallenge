@@ -48,6 +48,7 @@ String httpFetchCommand() {
     http.begin(url);
     const int status = http.GET();
     String command = status == 200 ? http.getString() : "";
+    Serial.printf("fetch cmd: status=%d cmd='%s'\n", status, command.c_str());
     http.end();
     command.trim();
     return command;

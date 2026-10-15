@@ -31,11 +31,14 @@ void TaskRadio(void *pvParameters) {
             }
         }
 
-        // El cohete vuelve a escuchar despues de transmitir telemetria.
+        // El cohete alterna TX (~0.4 s) y escucha (~0.6 s) cada 1 s.
+        // Se envia 3 veces con 200 ms de separacion para pegarle a la ventana de escucha.
         char command;
         if (xQueueReceive(commandQueue, &command, 0) == pdTRUE) {
-            vTaskDelay(pdMS_TO_TICKS(30));
-            radioSendCommand(command);
+            for (int i = 0; i < 3; i++) {
+                vTaskDelay(pdMS_TO_TICKS(200));
+                radioSendCommand(command);
+            }
         }
 
         if (millis() - lastBatt >= 5000) {
