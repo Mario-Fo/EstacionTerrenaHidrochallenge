@@ -43,7 +43,13 @@ void flightUpdate() {
             // apogeo: la velocidad cruza a <= 0 con altitud suficiente (3 ciclos)
             cnt = (v <= 0.0f && alt > 10.0f) ? cnt + 1 : 0;
             if (cnt >= 3) {
+<<<<<<< HEAD
                 deployLocked();
+=======
+                tData.paracaidas_eyectado = true;
+                ledcWrite(SERVO_CH, 102);          // aprox 180 grados
+                flightState = DESACOPLE;
+>>>>>>> cb0335b8459810b43a28a7ece3191b64527a81b7
                 cnt = 0;
             }
             break;

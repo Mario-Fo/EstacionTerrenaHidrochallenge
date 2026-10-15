@@ -87,6 +87,7 @@ void radioTransmit() {
     }
 }
 
+<<<<<<< HEAD
 void radioPollCommand() {
     if (!radioOK || !commandReceived) return;
     commandReceived = false;
@@ -102,4 +103,20 @@ void radioPollCommand() {
         Serial.println(flightDeploy() ? "Servo: despliegue solicitado por LoRa"
                                      : "Servo: ya desplegado, comando ignorado");
     }
+=======
+bool radioCheckCommand(String &cmd, uint32_t timeout) {
+    if (!radioOK) return false;
+    String incoming;
+    if (radio.receive(incoming, timeout) != RADIOLIB_ERR_NONE) return false;
+    incoming.trim();
+    if (incoming.length() == 0) return false;
+    cmd = incoming;
+    return true;
+}
+
+void radioSendAck(const char *msg) {
+    if (!radioOK) return;
+    String ack = msg;
+    radio.transmit(ack);
+>>>>>>> cb0335b8459810b43a28a7ece3191b64527a81b7
 }

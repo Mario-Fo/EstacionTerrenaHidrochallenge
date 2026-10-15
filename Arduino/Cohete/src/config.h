@@ -14,6 +14,7 @@
 #define GPS_TX_PIN 43
 #define GPS_RX_PIN 44
 
+<<<<<<< HEAD
 #define CAMERA_PIN 7
 // Boton activo a GND: drenador abierto, LOW pulsa y HIGH libera.
 #define CAMERA_ACTIVE_LEVEL LOW
@@ -28,6 +29,12 @@
 #define SERVO_CLOSED_DUTY 51
 #define SERVO_DEPLOYED_DUTY 102
 #define RPM_PIN   8
+=======
+#define SERVO_PIN 8
+#define SERVO_CH  0
+#define CAM_PIN   7
+#define RPM_PIN   4
+>>>>>>> cb0335b8459810b43a28a7ece3191b64527a81b7
 
 #define LED_PIN 48
 
@@ -36,5 +43,5 @@
 #define LORA_SF       7
 #define LORA_CR       7
 #define LORA_SYNCWORD 0x12
-#define LORA_PWR      22
+#define LORA_PWR      14
 #define LORA_PREAMBLE 8

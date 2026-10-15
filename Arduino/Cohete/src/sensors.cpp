@@ -18,6 +18,7 @@ bool bnoOK = false;
 float altitudReferencia = 0;
 float lastAlt = 0;
 uint32_t lastAltTime = 0;
+float accOffX = 0, accOffY = 0, accOffZ = 0;
 
 const uint32_t SENSOR_RETRY_MS = 2000;
 uint32_t lastBmeRetry = 0;
@@ -79,6 +80,32 @@ void sensorsInit() {
     bnoOK = bnoInit();
     Serial.printf("BNO055 @0x%02X: %s\n", bnoAddr, bnoOK ? "OK" : "NO");
 
+    if (bnoOK) {
+        // Offsets de calibracion (22 bytes). Pega aqui los que imprima el monitor
+        // tras calibrar (mueve el sensor en todas las orientaciones hasta 3/3/3/3).
+        static const uint8_t BNO_OFFSETS[22] = {0};
+        bool hasOffsets = false;
+        for (int i = 0; i < 22; i++) if (BNO_OFFSETS[i] != 0) { hasOffsets = true; break; }
+        if (hasOffsets) {
+            bno->setSensorOffsets(BNO_OFFSETS);
+            Serial.println("BNO offsets cargados.");
+        }
+
+        uint8_t sys, gyro, accel, mag;
+        bno->getCalibration(&sys, &gyro, &accel, &mag);
+        Serial.printf("BNO calib sys=%d gyro=%d accel=%d mag=%d (3=calibrado)\n", sys, gyro, accel, mag);
+        // offset de aceleracion asumiendo reposo al arranque
+        float sx = 0, sy = 0, sz = 0;
+        for (int i = 0; i < 20; i++) {
+            sensors_event_t ev;
+            bno->getEvent(&ev, Adafruit_BNO055::VECTOR_LINEARACCEL);
+            sx += ev.acceleration.x; sy += ev.acceleration.y; sz += -ev.acceleration.z;
+            vTaskDelay(pdMS_TO_TICKS(50));
+        }
+        accOffX = sx / 20.0f; accOffY = sy / 20.0f; accOffZ = sz / 20.0f;
+        Serial.printf("BNO offset accel: %.2f/%.2f/%.2f\n", accOffX, accOffY, accOffZ);
+    }
+
     if (bmeOK) {
         float suma = 0;
         for (int i = 0; i < 10; i++) {
@@ -104,20 +131,36 @@ void sensorsUpdate() {
     }
 
     if (bmeOK) {
-        tData.pres = bme.readPressure() / 100.0F;
-        tData.temp = bme.readTemperature();
-        tData.hum = bme.readHumidity();
+        float p = bme.readPressure() / 100.0F;   // hPa
+        float t = bme.readTemperature();
+        float h = bme.readHumidity();
 
-        float currentAlt = bme.readAltitude(1013.25) - altitudReferencia;
-        tData.alt = (tData.alt * 0.7f) + (currentAlt * 0.3f);
+        // Validar: BME280 valido = 300..1100 hPa, -40..85 C, 0..100 %
+        if (p >= 300.0f && p <= 1100.0f && t >= -40.0f && t <= 85.0f && h >= 0.0f && h <= 100.0f) {
+            tData.pres = p;
+            tData.temp = t;
+            tData.hum = h;
 
-        // velocidad vertical desde la altitud FILTRADA y el dt real, con pasa-bajos
-        uint32_t dtms = now - lastAltTime;
-        if (dtms < 1) dtms = 1;
-        float vInst = (tData.alt - lastAlt) / (dtms / 1000.0f);
-        lastAlt = tData.alt;
-        lastAltTime = now;
-        tData.velZ = (tData.velZ * 0.6f) + (vInst * 0.4f);
+            // altitud desde la presion ya leida (misma referencia 1013.25)
+            float currentAlt = 44330.0f * (1.0f - powf(p / 1013.25f, 0.1903f)) - altitudReferencia;
+
+            // limitar el salto por muestra (evita picos por glitch del sensor)
+            float dAlt = currentAlt - tData.alt;
+            const float MAX_STEP = 3.0f; // m por ciclo (10 Hz)
+            if (dAlt >  MAX_STEP) currentAlt = tData.alt + MAX_STEP;
+            if (dAlt < -MAX_STEP) currentAlt = tData.alt - MAX_STEP;
+
+            tData.alt = (tData.alt * 0.7f) + (currentAlt * 0.3f);
+
+            // velocidad vertical desde la altitud FILTRADA y el dt real, con pasa-bajos
+            uint32_t dtms = now - lastAltTime;
+            if (dtms < 1) dtms = 1;
+            float vInst = (tData.alt - lastAlt) / (dtms / 1000.0f);
+            lastAlt = tData.alt;
+            lastAltTime = now;
+            tData.velZ = (tData.velZ * 0.6f) + (vInst * 0.4f);
+        }
+        // lectura invalida: se conservan los ultimos valores validos
     } else if (now - lastBmeRetry >= SENSOR_RETRY_MS) {
         lastBmeRetry = now;
         bmeOK = bme.begin(0x76) || bme.begin(0x77);
@@ -126,10 +169,10 @@ void sensorsUpdate() {
     if (bnoOK) {
         sensors_event_t event;
         bno->getEvent(&event, Adafruit_BNO055::VECTOR_LINEARACCEL);
-        tData.accX = event.acceleration.x;
-        tData.accY = event.acceleration.y;
+        tData.accX = event.acceleration.x - accOffX;
+        tData.accY = event.acceleration.y - accOffY;
         // Montaje invertido: corregir solo Z conservando el signo del movimiento.
-        tData.accZ = -event.acceleration.z;
+        tData.accZ = -event.acceleration.z - accOffZ;
     } else if (now - lastBnoRetry >= SENSOR_RETRY_MS) {
         lastBnoRetry = now;
         bnoOK = bnoInit();
@@ -147,12 +190,25 @@ void sensorsUpdate() {
     xSemaphoreGive(dataMutex);
 
     static uint32_t lastDbg = 0;
-    if (now - lastDbg >= 2000) {
+    if (now - lastDbg >= 5000) {
         lastDbg = now;
         Serial.printf("GPS chars=%u fix=%u sats=%u locValid=%d\n",
                       gps.charsProcessed(), gps.sentencesWithFix(),
                       gps.satellites.value(), gps.location.isValid());
         Serial.printf("BNO ok=%d acc=%.2f/%.2f/%.2f\n",
                       bnoOK, tData.accX, tData.accY, tData.accZ);
+        if (bnoOK) {
+            uint8_t sys, gyro, accel, mag;
+            bno->getCalibration(&sys, &gyro, &accel, &mag);
+            Serial.printf("BNO calib sys=%d gyro=%d accel=%d mag=%d\n", sys, gyro, accel, mag);
+            if (sys == 3 && gyro == 3 && accel == 3 && mag == 3) {
+                uint8_t cal[22];
+                if (bno->getSensorOffsets(cal)) {
+                    Serial.print("BNO_OFFSETS = {");
+                    for (int i = 0; i < 22; i++) Serial.printf("0x%02X%s", cal[i], (i < 21) ? "," : "");
+                    Serial.println("};");
+                }
+            }
+        }
     }
 }
