@@ -128,7 +128,8 @@ void sensorsUpdate() {
         bno->getEvent(&event, Adafruit_BNO055::VECTOR_LINEARACCEL);
         tData.accX = event.acceleration.x;
         tData.accY = event.acceleration.y;
-        tData.accZ = event.acceleration.z;
+        // Montaje invertido: corregir solo Z conservando el signo del movimiento.
+        tData.accZ = -event.acceleration.z;
     } else if (now - lastBnoRetry >= SENSOR_RETRY_MS) {
         lastBnoRetry = now;
         bnoOK = bnoInit();

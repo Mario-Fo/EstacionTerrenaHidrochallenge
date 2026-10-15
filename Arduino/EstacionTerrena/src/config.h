@@ -24,4 +24,4 @@
 #define LORA_PREAMBLE 8
 #define LORA_TCXO     0.0
 
-#define SERVER_URL "http://10.35.234.128:8000/api/lecturas-multi"
+#define SERVER_URL "http://172.28.32.128:8000/api/lecturas-multi"

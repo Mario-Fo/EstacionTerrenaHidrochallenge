@@ -9,6 +9,19 @@ use Illuminate\Support\Facades\File;
 
 class ComandoController extends Controller
 {
+    public function camara(): JsonResponse
+    {
+        $path = $this->commandPath();
+        File::ensureDirectoryExists(dirname($path));
+        file_put_contents($path, 'c', LOCK_EX);
+
+        return response()->json([
+            'ok' => true,
+            'message' => 'Comando de camara encolado.',
+            'command' => 'c',
+        ]);
+    }
+
     public function desplegar(): JsonResponse
     {
         $path = $this->commandPath();

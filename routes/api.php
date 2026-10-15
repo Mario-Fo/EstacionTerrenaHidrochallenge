@@ -9,4 +9,5 @@ Route::post('/lecturas-multi', [LecturaSensorController::class, 'store']);
 Route::get('/lecturas/ultima', [LecturaSensorController::class, 'ultima']);
 
 Route::post('/comandos/desplegar', [ComandoController::class, 'desplegar']);
+Route::post('/comandos/camara', [ComandoController::class, 'camara']);
 Route::get('/comandos/pendiente', [ComandoController::class, 'pendiente']);

@@ -162,7 +162,7 @@
           <section class="col-start-4 row-start-1 row-end-4 self-start h-[calc(100%)] rounded-2xl border border-slate-800 bg-slate-900/30 p-5 overflow-hidden">          
             <h3 class="font-semibold">Graficas</h3>
             <div class="mt-2 h-[calc(100%-2rem)] space-y-1 overflow-y-auto pr-1 [&::-webkit-scrollbar]:hidden" style="-ms-overflow-style: none; scrollbar-width: none;">
-              @include('Graficas.altura_vs_tiempo')
+              @include('Graficas.altura_vs_tiempo')[]
               @include('Graficas.aceleracion_vs_tiempo')
               @include('Graficas.velocidad_vertical_vs_tiempo')
             </div>
@@ -230,7 +230,7 @@
                 </div>
           </section>
 
-          <!-- HACER LOS COMANDOS, SOLO ESTAN DE DECORACION AHORITA-->
+          <!-- Comandos -->
           <section class="col-start-1 col-end-2 row-start-3 rounded-2xl border border-slate-800 bg-slate-900/30 p-5">
             <h1 class="text-sm font-semibold mb-2">Comandos</h1>
             <div class="flex items-right justify-between mb-1">
@@ -238,6 +238,8 @@
               <button id="resetDashboardButton" type="button" class="ml-2 px-3 py-1 rounded-md bg-rose-500/20 border border-rose-500/50 text-sm font-medium text-rose-200 hover:bg-rose-500/30 transition">Resetear</button>
             </div>
             <p id="commandStatus" class="mt-2 min-h-4 text-xs text-slate-400" aria-live="polite"></p>
+            <button id="cameraButton" type="button" class="mt-2 px-3 py-1 rounded-md bg-sky-500/20 border border-sky-500/50 text-sm font-medium text-sky-200 hover:bg-sky-500/30 transition disabled:opacity-50">Prender cámara</button>
+            <p id="cameraStatus" class="mt-2 min-h-4 text-xs text-slate-400" aria-live="polite"></p>
           </section>
         </div>  
       </main>
@@ -711,6 +713,30 @@
         }
       }
 
+      async function turnOnCamera() {
+        const button = document.getElementById("cameraButton");
+        if (button.disabled) return;
+        button.disabled = true;
+        setText("cameraStatus", "Enviando comando de cámara...");
+        try {
+          const response = await fetch("/api/comandos/camara", {
+            method: "POST",
+            headers: { "Accept": "application/json" },
+          });
+          const result = await response.json();
+          if (!response.ok || !result?.ok) {
+            throw new Error(result?.message || `HTTP ${response.status}`);
+          }
+          setText("cameraStatus", "Comando c encolado para el cohete.");
+        } catch (error) {
+          console.error("No se pudo enviar el comando de cámara:", error);
+          setText("cameraStatus", "No se pudo enviar el comando de cámara.");
+        } finally {
+          button.disabled = false;
+        }
+      }
+
+      document.getElementById("cameraButton")?.addEventListener("click", turnOnCamera);
       document.getElementById("deployButton")?.addEventListener("click", deployParachute);
       document.getElementById("resetDashboardButton")?.addEventListener("click", resetDashboard);
 
