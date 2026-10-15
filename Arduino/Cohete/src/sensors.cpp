@@ -25,11 +25,17 @@ uint32_t lastBmeRetry = 0;
 uint32_t lastBnoRetry = 0;
 
 volatile uint32_t rpm_pulses = 0;
+volatile uint32_t rpm_lastPulseUs = 0;
+volatile uint32_t rpm_periodUs = 0;
 uint32_t last_rpm_time = 0;
 portMUX_TYPE rpmMux = portMUX_INITIALIZER_UNLOCKED;
 
 void IRAM_ATTR rpm_isr() {
+    uint32_t now = micros();
     portENTER_CRITICAL_ISR(&rpmMux);
+    uint32_t dt = now - rpm_lastPulseUs;
+    if (dt > 0) rpm_periodUs = dt;   // periodo entre pulsos
+    rpm_lastPulseUs = now;
     rpm_pulses++;
     portEXIT_CRITICAL_ISR(&rpmMux);
 }
@@ -56,11 +62,18 @@ bool bnoInit() {
     delete bno;
     bnoAddr = 0x29;
     bno = new Adafruit_BNO055(55, bnoAddr);
-    if (bno->begin()) return true;
+    if (bno->begin()) {
+        bno->setExtCrystalUse(true);   // cristal externo: lectura mas estable
+        return true;
+    }
     delete bno;
     bnoAddr = 0x28;
     bno = new Adafruit_BNO055(55, bnoAddr);
-    return bno->begin();
+    if (bno->begin()) {
+        bno->setExtCrystalUse(true);
+        return true;
+    }
+    return false;
 }
 
 void sensorsInit() {
@@ -178,12 +191,19 @@ void sensorsUpdate() {
         bnoOK = bnoInit();
     }
 
-    if (now - last_rpm_time >= 1000) {
+    if (now - last_rpm_time >= 200) {   // 5 Hz: respuesta mas rapida que 1 Hz
         portENTER_CRITICAL(&rpmMux);
-        uint32_t pulses = rpm_pulses;
-        rpm_pulses = 0;
+        uint32_t period = rpm_periodUs;
+        uint32_t lastPulse = rpm_lastPulseUs;
+        rpm_periodUs = 0;
         portEXIT_CRITICAL(&rpmMux);
-        tData.rpm = pulses * 60; // 1 iman por vuelta
+        // 1 iman por vuelta: rpm = 60e6 us/min / periodo_us
+        // si hace mas de 0.5 s sin pulso, se considera detenido
+        if (period > 0 && (micros() - lastPulse) < 500000UL) {
+            tData.rpm = 60000000UL / period;
+        } else {
+            tData.rpm = 0;
+        }
         last_rpm_time = now;
     }
 
